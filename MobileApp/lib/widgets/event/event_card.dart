@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/event_model.dart';
+import '../../screens/event/detail_event_screen.dart';
 import 'attendee_avatars.dart';
 
 class EventCard extends StatelessWidget {
@@ -9,20 +10,30 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 6,
-      shadowColor: Colors.black.withAlpha(80),
-      surfaceTintColor: Colors.white,
-      clipBehavior: Clip.hardEdge,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: Colors.white,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetailEventScreen(event: event),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 6,
+        shadowColor: Colors.black.withAlpha(80),
+        surfaceTintColor: Colors.white,
+        clipBehavior: Clip.hardEdge,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: Colors.white,
 
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CoverImage(event: event),
-          _OrganizerRow(event: event),
-        ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CoverImage(event: event),
+            _OrganizerRow(event: event),
+          ],
+        ),
       ),
     );
   }
@@ -37,17 +48,25 @@ class _CoverImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          height: 180,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [event.coverColor, event.coverColor.withAlpha(180)],
+        if (event.coverImage != null)
+          Image.asset(
+            event.coverImage!,
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          )
+        else
+          Container(
+            height: 180,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [event.coverColor, event.coverColor.withAlpha(180)],
+              ),
             ),
           ),
-        ),
         Positioned(
           bottom: 0,
           left: 0,

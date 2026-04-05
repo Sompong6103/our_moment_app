@@ -38,12 +38,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               title: const Text('Join event'),
               onTap: () {
-                Navigator.pop(context);
-                AppLoading.show(context);
-                // จำลอง: ปิด loading หลัง 2 วินาที
-                Future.delayed(const Duration(seconds: 2), () {
-                  AppLoading.hide();
-                });
+                
+                // Navigator.pop(context);
+                // AppLoading.show(context);
+                // // จำลอง: ปิด loading หลัง 2 วินาที
+                // Future.delayed(const Duration(seconds: 2), () {
+                //   AppLoading.hide();
+                // });
               },
             ),
             ListTile(
