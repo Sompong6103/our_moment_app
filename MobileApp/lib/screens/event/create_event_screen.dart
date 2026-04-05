@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../config/app_colors.dart';
 import '../../widgets/common/app_primary_button.dart';
 import '../../widgets/common/app_text_field.dart';
@@ -18,6 +22,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final _dateStartController = TextEditingController();
   final _dateEndController = TextEditingController();
 
+  File? _bannerImage;
   bool _acceptPhotos = false;
   String? _themeName;
   Color? _themeColor;
@@ -29,6 +34,19 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     _dateStartController.dispose();
     _dateEndController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickBannerImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      setState(() => _bannerImage = File(picked.path));
+    }
   }
 
   Future<void> _pickDateTime(TextEditingController controller) async {
@@ -65,55 +83,198 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       builder: (ctx) {
         String name = '';
         Color picked = const Color(0xFF001F54);
+        bool isCustom = false;
+        final customNameCtrl = TextEditingController();
 
-        final presets = <MapEntry<String, Color>>[
-          const MapEntry('Blue Navy', Color(0xFF001F54)),
-          const MapEntry('Rose Gold', Color(0xFFB76E79)),
-          const MapEntry('Emerald', Color(0xFF2ECC71)),
-          const MapEntry('Royal Purple', Color(0xFF6C3483)),
-          const MapEntry('Sunset Orange', Color(0xFFE67E22)),
-        ];
+        // Theme collections by event type
+        final themeCategories = <String, List<MapEntry<String, Color>>>{
+          '💒 Wedding': [
+            const MapEntry('Classic White', Color(0xFFFAF3E0)),
+            const MapEntry('Rose Gold', Color(0xFFB76E79)),
+            const MapEntry('Blush Pink', Color(0xFFF8A5C2)),
+            const MapEntry('Champagne', Color(0xFFE8D5B7)),
+            const MapEntry('Ivory Gold', Color(0xFFD4AF37)),
+            const MapEntry('Dusty Blue', Color(0xFF6E8FAC)),
+            const MapEntry('Sage Green', Color(0xFF9CAF88)),
+            const MapEntry('Lavender', Color(0xFFB39DDB)),
+          ],
+          '🙏 Buddhist Ceremony': [
+            const MapEntry('Saffron', Color(0xFFF4A460)),
+            const MapEntry('Temple Gold', Color(0xFFDAA520)),
+            const MapEntry('Lotus Pink', Color(0xFFE091AA)),
+            const MapEntry('Sacred White', Color(0xFFF5F5F0)),
+            const MapEntry('Monk Orange', Color(0xFFE67E22)),
+            const MapEntry('Jade Green', Color(0xFF00A86B)),
+          ],
+          '🎉 Party & Celebration': [
+            const MapEntry('Royal Purple', Color(0xFF6C3483)),
+            const MapEntry('Electric Blue', Color(0xFF3498DB)),
+            const MapEntry('Neon Pink', Color(0xFFFF1493)),
+            const MapEntry('Sunset Orange', Color(0xFFE67E22)),
+            const MapEntry('Cherry Red', Color(0xFFE74C3C)),
+            const MapEntry('Gold Glam', Color(0xFFF1C40F)),
+          ],
+          '🤵 Formal & Corporate': [
+            const MapEntry('Navy Blue', Color(0xFF001F54)),
+            const MapEntry('Midnight', Color(0xFF2C3E50)),
+            const MapEntry('Charcoal', Color(0xFF36454F)),
+            const MapEntry('Slate Grey', Color(0xFF7F8C8D)),
+            const MapEntry('Forest Green', Color(0xFF2D572C)),
+            const MapEntry('Burgundy', Color(0xFF800020)),
+          ],
+          '🌿 Nature & Garden': [
+            const MapEntry('Emerald', Color(0xFF2ECC71)),
+            const MapEntry('Teal', Color(0xFF1ABC9C)),
+            const MapEntry('Olive', Color(0xFF808000)),
+            const MapEntry('Coral', Color(0xFFFF6F61)),
+            const MapEntry('Sky Blue', Color(0xFF87CEEB)),
+            const MapEntry('Terracotta', Color(0xFFCC5A47)),
+          ],
+        };
 
         return StatefulBuilder(
           builder: (ctx, setDialogState) => AlertDialog(
             title: const Text('Choose Theme'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: presets.map((e) {
-                    final isSelected = picked == e.value;
-                    return GestureDetector(
-                      onTap: () => setDialogState(() {
-                        picked = e.value;
-                        name = e.key;
-                      }),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: e.value,
-                              shape: BoxShape.circle,
-                              border: isSelected
-                                  ? Border.all(
-                                      color: AppColors.primary, width: 3)
-                                  : null,
-                            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Preset theme categories
+                    ...themeCategories.entries.map((category) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.key,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 4),
-                          Text(e.key,
-                              style: const TextStyle(fontSize: 10)),
-                        ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: category.value.map((e) {
+                            final isSelected =
+                                !isCustom && picked == e.value && name == e.key;
+                            return GestureDetector(
+                              onTap: () => setDialogState(() {
+                                picked = e.value;
+                                name = e.key;
+                                isCustom = false;
+                              }),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: e.value,
+                                      shape: BoxShape.circle,
+                                      border: isSelected
+                                          ? Border.all(
+                                              color: AppColors.primary,
+                                              width: 3)
+                                          : Border.all(
+                                              color: Colors.grey.withAlpha(60),
+                                              width: 0.5),
+                                      boxShadow: isSelected
+                                          ? [
+                                              BoxShadow(
+                                                color:
+                                                    e.value.withAlpha(100),
+                                                blurRadius: 6,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  SizedBox(
+                                    width: 50,
+                                    child: Text(
+                                      e.key,
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.normal,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                    )),
+
+                    const Divider(),
+                    const SizedBox(height: 4),
+
+                    // Toggle custom color
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Custom Color',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Switch(
+                          value: isCustom,
+                          onChanged: (v) => setDialogState(() {
+                            isCustom = v;
+                          }),
+                          activeTrackColor: AppColors.primary,
+                        ),
+                      ],
+                    ),
+
+                    if (isCustom) ...[
+                      const SizedBox(height: 8),
+
+                      // Color picker
+                      ColorPicker(
+                        pickerColor: picked,
+                        onColorChanged: (color) => setDialogState(() {
+                          picked = color;
+                          isCustom = true;
+                        }),
+                        enableAlpha: false,
+                        hexInputBar: true,
+                        labelTypes: const [],
+                        pickerAreaHeightPercent: 0.5,
                       ),
-                    );
-                  }).toList(),
+                      const SizedBox(height: 8),
+
+                      // Custom name
+                      TextField(
+                        controller: customNameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Color name',
+                          hintText: 'e.g. My Custom Blue',
+                          isDense: true,
+                        ),
+                        onChanged: (v) => setDialogState(() {
+                          name = v;
+                        }),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
             actions: [
               TextButton(
@@ -167,24 +328,53 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           children: [
             // Banner placeholder
             GestureDetector(
-              onTap: () {
-                // TODO: pick image
-              },
-              child: Container(
-                height: 160,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.buttonGrey,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Tap to choose img banner',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+              onTap: _pickBannerImage,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: _bannerImage != null
+                    ? Stack(
+                        children: [
+                          Image.file(
+                            _bannerImage!,
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => _bannerImage = null),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black45,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close,
+                                    size: 16, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Container(
+                        height: 160,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.buttonGrey,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Tap to choose img banner',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 20),
@@ -207,35 +397,27 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             const SizedBox(height: 16),
 
             // Date start
-            AppTextField(
-              label: 'Date start',
-              hintText: 'Sat, 25 Oct 2025 | 18:00',
-              controller: _dateStartController,
-              enabled: false,
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => _pickDateTime(_dateStartController),
-                child: const Text('Pick date & time'),
+            GestureDetector(
+              onTap: () => _pickDateTime(_dateStartController),
+              child: AbsorbPointer(
+                child: AppTextField(
+                  label: 'Date start',
+                  hintText: 'Sat, 25 Oct 2025 | 18:00',
+                  controller: _dateStartController,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
 
             // Date end
-            AppTextField(
-              label: 'Date end',
-              hintText: 'Sat, 25 Oct 2025 | 22:00',
-              controller: _dateEndController,
-              enabled: false,
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => _pickDateTime(_dateEndController),
-                child: const Text('Pick date & time'),
+            GestureDetector(
+              onTap: () => _pickDateTime(_dateEndController),
+              child: AbsorbPointer(
+                child: AppTextField(
+                  label: 'Date end',
+                  hintText: 'Sat, 25 Oct 2025 | 22:00',
+                  controller: _dateEndController,
+                ),
               ),
             ),
             const SizedBox(height: 20),

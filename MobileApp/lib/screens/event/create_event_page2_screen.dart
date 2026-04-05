@@ -67,17 +67,52 @@ class _CreateEventPage2ScreenState extends State<CreateEventPage2Screen> {
         final locationCtrl = TextEditingController();
         final dateTimeCtrl = TextEditingController();
 
+        Future<void> pickDateTime() async {
+          final date = await showDatePicker(
+            context: ctx,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(2024),
+            lastDate: DateTime(2030),
+          );
+          if (date == null) return;
+
+          final time = await showTimePicker(
+            context: ctx,
+            initialTime: TimeOfDay.now(),
+          );
+          if (time == null) return;
+
+          final months = [
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+          ];
+          final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          final dayName = days[date.weekday - 1];
+          final monthName = months[date.month - 1];
+          final h = time.hour.toString().padLeft(2, '0');
+          final m = time.minute.toString().padLeft(2, '0');
+
+          dateTimeCtrl.text =
+              '$dayName, ${date.day} $monthName ${date.year} | $h:$m';
+        }
+
         return AlertDialog(
           title: const Text('Add Agenda'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: dateTimeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Date & Time',
-                    hintText: 'Sat, 25 Oct 2025 | 18:00',
+                GestureDetector(
+                  onTap: pickDateTime,
+                  child: AbsorbPointer(
+                    child: TextField(
+                      controller: dateTimeCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Date & Time',
+                        hintText: 'Tap to select',
+                        suffixIcon: Icon(Icons.calendar_today, size: 18),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
