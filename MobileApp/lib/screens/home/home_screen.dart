@@ -7,6 +7,7 @@ import '../../models/event_model.dart';
 import '../../models/notification_model.dart';
 import '../notification/notification_screen.dart';
 import '../profile/my_account_screen.dart';
+import '../event/create_event_screen.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../widgets/event/event_card.dart';
 import '../../widgets/event/events_section_header.dart';
@@ -49,7 +50,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               title: const Text('Create event'),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateEventScreen(),
+                  ),
+                );
+              },
             ),
           ],
         ),
