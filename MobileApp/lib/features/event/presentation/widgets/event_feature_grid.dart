@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../pages/live_gallary.dart';
 
 class EventFeatureGrid extends StatelessWidget {
   const EventFeatureGrid({super.key});
@@ -28,7 +29,15 @@ class EventFeatureGrid extends StatelessWidget {
                 iconColor: AppColors.primary,
                 title: 'Live Gallery',
                 subtitle: 'Real-time photos',
-                onTap: () {},
+                onTap: () {
+                  // Navigate to live gallery screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LiveGalleryScreen(),
+                    ),
+                  );
+                },
               ),
             ),
           ],
