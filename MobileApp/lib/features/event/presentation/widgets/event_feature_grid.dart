@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../presentation/pages/wish_wall_screen.dart';
+import '../pages/event_map_page.dart';
 
 class EventFeatureGrid extends StatelessWidget {
   const EventFeatureGrid({super.key});
@@ -61,7 +62,13 @@ class EventFeatureGrid extends StatelessWidget {
                 iconColor: const Color(0xFF4CAF50),
                 title: 'Event Map',
                 subtitle: 'Find your way',
-                onTap: () {},
+                onTap: () {
+                  // Navigate to Event Map Screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const EventMapScreen()),
+                  );
+                },
               ),
             ),
           ],
