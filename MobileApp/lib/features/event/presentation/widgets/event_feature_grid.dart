@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../presentation/pages/wish_wall_screen.dart';
 
 class EventFeatureGrid extends StatelessWidget {
   const EventFeatureGrid({super.key});
@@ -43,7 +44,13 @@ class EventFeatureGrid extends StatelessWidget {
                 iconColor: const Color(0xFFC9A96E),
                 title: 'Wish Wall',
                 subtitle: 'Guest wishes',
-                onTap: () {},
+                onTap: () {
+                  //Navigate to Wish Wall Screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WishWallScreen()),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
