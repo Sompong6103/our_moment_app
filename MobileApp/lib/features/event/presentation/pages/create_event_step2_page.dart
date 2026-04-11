@@ -1,9 +1,12 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_primary_button.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../domain/models/agenda_item.dart';
 import '../widgets/agenda_timeline.dart';
+import 'location_picker_page.dart';
 
 class CreateEventStep2Page extends StatefulWidget {
   final String eventName;
@@ -31,6 +34,8 @@ class CreateEventStep2Page extends StatefulWidget {
 }
 
 class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
+  SelectedLocation? _selectedLocation;
+
   final List<AgendaItem> _agendaItems = [
     const AgendaItem(
       dateTime: 'Sat, 25 Oct 2025 | 18:00',
@@ -200,31 +205,76 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
                   ),
                   const SizedBox(height: 12),
 
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      height: 140,
-                      width: double.infinity,
-                      color: AppColors.buttonGrey,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.map_outlined,
-                            size: 48,
-                            color: AppColors.textSecondary.withAlpha(100),
+                  GestureDetector(
+                    onTap: () async {
+                      final result = await Navigator.push<SelectedLocation>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LocationPickerPage(
+                            initialLocation: _selectedLocation?.latLng,
                           ),
-                          Positioned(
-                            bottom: 8,
-                            child: Text(
-                              'Tap to select location',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                        ),
+                      );
+                      if (result != null) {
+                        setState(() => _selectedLocation = result);
+                      }
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 140,
+                        width: double.infinity,
+                        color: AppColors.buttonGrey,
+                        child: _selectedLocation != null
+                            ? Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Image.network(
+                                      'https://tile.openstreetmap.org/15/'
+                                      '${_lngToTileX(_selectedLocation!.latLng.longitude, 15)}/'
+                                      '${_latToTileY(_selectedLocation!.latLng.latitude, 15)}.png',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) => const SizedBox(),
+                                    ),
+                                  ),
+                                  Container(color: Colors.white.withValues(alpha: 0.3)),
+                                  Center(
+                                    child: Icon(Icons.location_on, size: 36, color: AppColors.primary),
+                                  ),
+                                  Positioned(
+                                    bottom: 8,
+                                    left: 12,
+                                    right: 12,
+                                    child: Text(
+                                      _selectedLocation!.displayName,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.map_outlined,
+                                    size: 48,
+                                    color: AppColors.textSecondary.withAlpha(100),
+                                  ),
+                                  Positioned(
+                                    bottom: 8,
+                                    child: Text(
+                                      'Tap to select location',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -288,5 +338,11 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
         ],
       ),
     );
+  }
+
+  static int _lngToTileX(double lng, int zoom) => (((lng + 180) / 360) * (1 << zoom)).floor();
+  static int _latToTileY(double lat, int zoom) {
+    final latRad = lat * pi / 180;
+    return ((1 - (log(tan(latRad) + 1 / cos(latRad)) / pi)) / 2 * (1 << zoom)).floor();
   }
 }

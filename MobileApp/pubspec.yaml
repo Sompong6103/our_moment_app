@@ -40,6 +40,9 @@ dependencies:
   mobile_scanner: ^7.2.0
   gal: ^2.3.0
   path_provider: ^2.1.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
