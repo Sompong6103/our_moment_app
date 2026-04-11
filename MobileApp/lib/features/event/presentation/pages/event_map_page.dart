@@ -1,8 +1,6 @@
-//เพิ่มในไฟล์ pubspec.yaml เพื่อใช้ลิ้งค์ไปยังแผนที่
-//dependencies:
-//  url_launcher: ^6.3.0
 import 'package:flutter/material.dart';
-import 'package:our_moment_app/core/theme/app_colors.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_detail_scaffold.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class EventMapScreen extends StatelessWidget {
@@ -19,34 +17,9 @@ class EventMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leadingWidth: 90,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
-          child: InkWell(
-            onTap: () => Navigator.of(context).pop(),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.buttonGrey,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Event Map',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        ),
-      ),
-      body: Padding(
+    return AppDetailScaffold(
+      title: 'Event Map',
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Column(
           children: [
@@ -59,7 +32,7 @@ class EventMapScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withValues(alpha: 0.2),
                     spreadRadius: 2,
                     blurRadius: 10,
                   ),

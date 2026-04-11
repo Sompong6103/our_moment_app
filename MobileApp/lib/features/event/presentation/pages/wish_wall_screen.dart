@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_detail_scaffold.dart';
 
 class WishWallScreen extends StatefulWidget {
   const WishWallScreen({super.key});
@@ -14,6 +15,12 @@ class _WishWallScreenState extends State<WishWallScreen> {
 
   // 2. Controller สำหรับรับค่าจากช่องพิมพ์
   final TextEditingController _textController = TextEditingController();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
 
   // ฟังก์ชันสำหรับเพิ่มคำอวยพร
   void _sendWish() {
@@ -34,34 +41,9 @@ class _WishWallScreenState extends State<WishWallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leadingWidth: 90,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
-          child: InkWell(
-            onTap: () => Navigator.of(context).pop(),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.buttonGrey,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-            ),
-          ),
-        ),
-        title: const Text(
-          "Guest Wishes Wall",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        ),
-      ),
-      body: Column(
+    return AppDetailScaffold(
+      title: 'Guest Wishes Wall',
+      child: Column(
         children: [
           // แสดงเนื้อหา
           Expanded(
@@ -125,7 +107,7 @@ class _WishWallScreenState extends State<WishWallScreen> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.border),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: Column(
