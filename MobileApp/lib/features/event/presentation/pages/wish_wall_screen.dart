@@ -16,6 +16,16 @@ class _WishWallScreenState extends State<WishWallScreen> {
   // 2. Controller สำหรับรับค่าจากช่องพิมพ์
   final TextEditingController _textController = TextEditingController();
 
+  // 3. ตัวแปรสถานะว่าผู้ใช้ส่งคำอวยพรแล้วหรือยัง (local state เท่านั้น)
+  bool _hasWished = false;
+
+
+  @override
+  void initState() {
+    super.initState();
+    // ไม่มีการโหลดสถานะจาก storage แล้ว
+  }
+
   @override
   void dispose() {
     _textController.dispose();
@@ -24,18 +34,18 @@ class _WishWallScreenState extends State<WishWallScreen> {
 
   // ฟังก์ชันสำหรับเพิ่มคำอวยพร
   void _sendWish() {
-    if (_textController.text.trim().isNotEmpty) {
+    if (_textController.text.trim().isNotEmpty && !_hasWished) {
       setState(() {
         _wishes.insert(0, {
-          "name": "Guest User", 
+          "name": "Guest User",
           "wish": "“${_textController.text}”",
           "time": "Just now",
-          "avatar": "https://i.pravatar.cc/150?u=guest" 
+          "avatar": "https://i.pravatar.cc/150?u=guest"
         });
-        _textController.clear(); // ล้างช่องกรอกข้อความหลังส่งคำอวยพร
-        // อาจต้องเพิ่มการบันทึกคำอวยพรลงฐานข้อมูลที่นี่
-
+        _textController.clear();
+        _hasWished = true;
       });
+      // TODO: ในอนาคตให้เช็คกับ API ว่าส่งแล้วจริงหรือไม่
     }
   }
 
@@ -136,6 +146,15 @@ class _WishWallScreenState extends State<WishWallScreen> {
 
   // --- UI ส่วนแถบรับข้อความด้านล่าง ---
   Widget _buildInputArea() {
+    if (_hasWished) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        child: const Text(
+          'คุณได้ส่งคำอวยพรไปแล้ว',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+        ),
+      );
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -154,6 +173,7 @@ class _WishWallScreenState extends State<WishWallScreen> {
                 ),
                 child: TextField(
                   controller: _textController,
+                  enabled: !_hasWished,
                   decoration: const InputDecoration(
                     hintText: "Aa",
                     border: InputBorder.none,
@@ -165,7 +185,7 @@ class _WishWallScreenState extends State<WishWallScreen> {
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.chat_bubble_rounded, color: Colors.indigo),
-              onPressed: _sendWish,
+              onPressed: _hasWished ? null : _sendWish,
             ),
           ],
         ),

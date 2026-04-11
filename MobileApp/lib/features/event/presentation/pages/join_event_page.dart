@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_primary_button.dart';
+import '../../data/sample_events.dart';
+import '../../domain/models/event_model.dart';
+import 'event_detail_page.dart';
 import 'scan_qr_page.dart';
+
+// Mock: map join codes to events
+const _eventCodes = <String, int>{
+  'WED24': 1,
+};
+
+EventModel? _findEventByCode(String code) {
+  final index = _eventCodes[code.toUpperCase().trim()];
+  if (index != null && index < sampleEvents.length) return sampleEvents[index];
+  return null;
+}
 
 class JoinEventPage extends StatefulWidget {
   const JoinEventPage({super.key});
@@ -12,11 +26,59 @@ class JoinEventPage extends StatefulWidget {
 
 class _JoinEventPageState extends State<JoinEventPage> {
   final _codeController = TextEditingController();
+  String? _errorText;
 
   @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
+  }
+
+  void _joinWithCode() {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) {
+      setState(() => _errorText = 'Please enter an event code');
+      return;
+    }
+    final event = _findEventByCode(code);
+    if (event == null) {
+      setState(() => _errorText = 'Invalid code. Please try again.');
+      return;
+    }
+    setState(() => _errorText = null);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventDetailPage(event: event, showJoinButton: true),
+      ),
+    );
+  }
+
+  Future<void> _handleQrResult(String? qrValue) async {
+    if (qrValue == null) return;
+    // Parse QR: ourmoment://join?code=WED24&event=...
+    String? code;
+    if (qrValue.contains('code=')) {
+      final uri = Uri.tryParse(qrValue);
+      code = uri?.queryParameters['code'];
+    } else {
+      code = qrValue;
+    }
+    if (code == null) return;
+
+    final event = _findEventByCode(code);
+    if (event != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EventDetailPage(event: event, showJoinButton: true),
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid QR Code'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -84,10 +146,15 @@ class _JoinEventPageState extends State<JoinEventPage> {
                   TextField(
                     controller: _codeController,
                     textAlign: TextAlign.left,
+                    textCapitalization: TextCapitalization.characters,
                     style: const TextStyle(fontSize: 16),
+                    onChanged: (_) {
+                      if (_errorText != null) setState(() => _errorText = null);
+                    },
                     decoration: InputDecoration(
                       hintText: 'Enter Code',
                       hintStyle: const TextStyle(color: AppColors.inputHint),
+                      errorText: _errorText,
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 16),
                       border: OutlineInputBorder(
@@ -109,9 +176,7 @@ class _JoinEventPageState extends State<JoinEventPage> {
 
                   AppPrimaryButton(
                     label: 'Join Event',
-                    onPressed: () {
-                      // TODO: join event logic
-                    },
+                    onPressed: _joinWithCode,
                   ),
                   const SizedBox(height: 28),
 
@@ -139,12 +204,13 @@ class _JoinEventPageState extends State<JoinEventPage> {
                     width: double.infinity,
                     height: 52,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
+                      onPressed: () async {
+                        final result = await Navigator.push<String>(
                           context,
                           MaterialPageRoute(
                               builder: (_) => const ScanQrPage()),
                         );
+                        _handleQrResult(result);
                       },
                       icon: const Icon(Icons.qr_code_scanner,
                           color: AppColors.textPrimary, size: 22),
