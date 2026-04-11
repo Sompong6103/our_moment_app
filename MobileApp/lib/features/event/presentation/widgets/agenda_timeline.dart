@@ -37,7 +37,7 @@ class AgendaTimeline extends StatelessWidget {
                     Expanded(
                       child: Container(
                         width: 2,
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                       ),
                     ),
                 ],

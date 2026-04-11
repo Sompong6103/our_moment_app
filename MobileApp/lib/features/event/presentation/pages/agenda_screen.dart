@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../domain/models/agenda_item.dart';
 import '../widgets/agenda_timeline.dart';
 
@@ -24,34 +24,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leadingWidth: 90,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
-          child: InkWell(
-            onTap: () => Navigator.of(context).pop(),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.buttonGrey,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-            ),
-          ),
-        ),
-        title: const Text("Agenda", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-      ),
-      body: Column(
+    return AppDetailScaffold(
+      title: 'Agenda',
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. ส่วนหัวข้ออธิบาย
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
             child: Text(
@@ -59,8 +36,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
               style: TextStyle(color: AppColors.textDark, fontSize: 14),
             ),
           ),
-
-          // 2. รายการ Agenda พร้อม Timeline
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
