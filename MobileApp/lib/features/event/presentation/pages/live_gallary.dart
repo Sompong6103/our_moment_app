@@ -20,19 +20,25 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
       backgroundColor: AppColors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
+        leadingWidth: 90,
         leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.grey.shade100,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 18),
-              onPressed: () => Navigator.pop(context),
+          padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
+          child: InkWell(
+            onTap: () => Navigator.of(context).pop(),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.buttonGrey,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
             ),
           ),
         ),
-        title: const Text("Live Gallery", style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        title: const Text("Live Gallery", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
       ),
       body: Column(
         children: [

@@ -38,16 +38,28 @@ class _WishWallScreenState extends State<WishWallScreen> {
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+        centerTitle: true,
+        leadingWidth: 90,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
+          child: InkWell(
+            onTap: () => Navigator.of(context).pop(),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.buttonGrey,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
+            ),
+          ),
         ),
         title: const Text(
           "Guest Wishes Wall",
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
         ),
-        centerTitle: true,
       ),
       body: Column(
         children: [
