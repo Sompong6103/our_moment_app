@@ -14,6 +14,7 @@ class EventModel {
   final Color? themeColor;
   final String? themeName;
   final int? joinedCount;
+  final bool isHost;
 
   const EventModel({
     required this.title,
@@ -29,5 +30,6 @@ class EventModel {
     this.themeColor,
     this.themeName,
     this.joinedCount,
+    this.isHost = false,
   });
 }

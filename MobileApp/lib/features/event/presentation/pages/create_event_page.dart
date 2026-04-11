@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_primary_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../../../core/widgets/app_switch.dart';
 import 'create_event_step2_page.dart';
 
 class CreateEventPage extends StatefulWidget {
@@ -504,10 +505,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Switch(
+                AppSwitch(
                   value: _acceptPhotos,
                   onChanged: (v) => setState(() => _acceptPhotos = v),
-                  activeTrackColor: AppColors.primary,
                 ),
               ],
             ),

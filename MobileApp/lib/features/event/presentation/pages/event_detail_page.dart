@@ -4,6 +4,7 @@ import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../domain/models/event_model.dart';
 import '../widgets/event_detail_header.dart';
 import '../widgets/event_feature_grid.dart';
+import 'dashboard_page.dart';
 
 class EventDetailPage extends StatelessWidget {
   final EventModel event;
@@ -14,6 +15,35 @@ class EventDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppDetailScaffold(
       title: 'Detail Event',
+      actions: event.isHost
+          ? [
+              Padding(
+                padding: const EdgeInsets.only(right: 20),
+                child: InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DashboardPage(event: event),
+                    ),
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.dashboard_outlined,
+                      size: 22,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ]
+          : null,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         child: Column(

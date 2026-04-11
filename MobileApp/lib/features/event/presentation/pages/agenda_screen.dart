@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../../../core/widgets/app_switch.dart';
 import '../../domain/models/agenda_item.dart';
 import '../widgets/agenda_timeline.dart';
 
@@ -42,9 +43,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
               child: AgendaTimeline(
                 items: agendaItems,
                 trailingBuilder: (context, index) {
-                  return CupertinoSwitch(
-                    // ignore: deprecated_member_use
-                    activeColor: AppColors.primary,
+                  return AppSwitch(
                     value: _notifyStates[index],
                     onChanged: (val) {
                       setState(() {
