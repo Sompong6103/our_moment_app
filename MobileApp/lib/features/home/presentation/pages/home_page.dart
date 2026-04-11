@@ -75,19 +75,16 @@ class _HomePageState extends State<HomePage> {
       return const MyAccountPage();
     }
 
-    return CustomScrollView(
-      slivers: [
-        const SliverToBoxAdapter(child: HomeHeader(name: 'Cheewanon S.')),
+    return Column(
+      children: [
+        const HomeHeader(name: 'Cheewanon S.'),
         if (_events.isNotEmpty)
-          SliverPadding(
+          Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            sliver: SliverToBoxAdapter(
-              child: EventSectionHeader(count: _events.length),
-            ),
+            child: EventSectionHeader(count: _events.length),
           ),
         if (_events.isEmpty)
-          const SliverFillRemaining(
-            hasScrollBody: false,
+          const Expanded(
             child: EmptyState(
               title: 'You don\'t have a ceremony yet.',
               subtitle: 'You can view the ceremonies you have attended here.',
@@ -95,15 +92,13 @@ class _HomePageState extends State<HomePage> {
             ),
           )
         else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (_, i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: EventCard(event: _events[i]),
-                ),
-                childCount: _events.length,
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              itemCount: _events.length,
+              itemBuilder: (_, i) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: EventCard(event: _events[i]),
               ),
             ),
           ),

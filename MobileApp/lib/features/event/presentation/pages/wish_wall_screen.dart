@@ -62,7 +62,7 @@ class _WishWallScreenState extends State<WishWallScreen> {
   // --- UI สำหรับกรณีไม่มีข้อมูล ---
   Widget _buildEmptyState() {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(40.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -1,10 +1,19 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/guest_card.dart';
 import '../../domain/models/event_model.dart';
 import 'analytics_page.dart';
+import 'guest_profile.dart';
 import 'guest_see_all.dart';
 import 'photo_management_page.dart';
 
@@ -20,18 +29,194 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   bool _sharePhotos = false;
 
+  void _showQrCode() {
+    final qrKey = GlobalKey();
+
+    Future<void> downloadQr() async {
+      try {
+        final boundary = qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+        final image = await boundary.toImage(pixelRatio: 3.0);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        final bytes = byteData!.buffer.asUint8List();
+        await Gal.putImageBytes(bytes, name: 'qr_code_${DateTime.now().millisecondsSinceEpoch}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('QR Code saved to gallery'), backgroundColor: AppColors.primary),
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to save QR Code'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Event QR Code',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Scan to join ${widget.event.title}',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              RepaintBoundary(
+                key: qrKey,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4)),
+                    ],
+                  ),
+                  child: QrImageView(
+                    data: 'ourmoment://join?code=WED24&event=${widget.event.title}',
+                    version: QrVersions.auto,
+                    size: 220,
+                    eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+                    dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.vpn_key_rounded, size: 16, color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text('JOIN CODE: WED24', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary, letterSpacing: 1)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: downloadQr,
+                        icon: const Icon(Icons.download, size: 18),
+                        label: const Text('Download', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          try {
+                            final boundary = qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+                            final image = await boundary.toImage(pixelRatio: 3.0);
+                            final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+                            final bytes = byteData!.buffer.asUint8List();
+                            final dir = await getTemporaryDirectory();
+                            final file = File('${dir.path}/qr_code.png');
+                            await file.writeAsBytes(bytes);
+                            await SharePlus.instance.share(
+                              ShareParams(
+                                files: [XFile(file.path)],
+                                text: 'Join ${widget.event.title} with code WED24!',
+                              ),
+                            );
+                          } catch (_) {}
+                        },
+                        icon: const Icon(Icons.share, size: 18),
+                        label: const Text('Share', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   final List<Map<String, dynamic>> _guests = [
     {
       'name': 'Krittanai Ngampanja',
+      'email': 'krittanai@gmail.com',
       'time': 'Joined 0 minutes ago.',
       'avatar': 'https://i.pravatar.cc/150?u=k1',
       'inEvent': false,
     },
     {
       'name': 'Cheewanon Srisawadwattana',
+      'email': 'sn.cheewa@gmail.com',
       'time': 'Joined 9 minutes ago.',
       'avatar': 'https://i.pravatar.cc/150?u=k2',
       'inEvent': true,
+    },
+    {
+      'name': 'Cameron Williamson',
+      'email': 'cameron@gmail.com',
+      'time': 'Joined 10 minutes ago.',
+      'avatar': 'https://i.pravatar.cc/150?u=k3',
+      'inEvent': false,
+    },
+    {
+      'name': 'Darrell Steward',
+      'email': 'darrell@gmail.com',
+      'time': 'Joined 10 minutes ago.',
+      'avatar': 'https://i.pravatar.cc/150?u=k4',
+      'inEvent': false,
+    },
+    {
+      'name': 'Ralph Edwards',
+      'email': 'ralph@gmail.com',
+      'time': 'Joined 10 minutes ago.',
+      'avatar': 'https://i.pravatar.cc/150?u=k5',
+      'inEvent': false,
     },
   ];
 
@@ -141,7 +326,7 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.55,
+              childAspectRatio: 1.35,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
@@ -164,7 +349,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   title: 'QR Code',
                   subtitle: 'Share event code',
                   color: const Color(0xFF2196F3),
-                  onTap: () {},
+                  onTap: _showQrCode,
                 ),
                 _MenuCard(
                   icon: Icons.bar_chart_rounded,
@@ -257,13 +442,23 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ),
             const SizedBox(height: 12),
-            ...List.generate(_guests.length, (index) {
+            ...List.generate(_guests.length > 5 ? 5 : _guests.length, (index) {
               final guest = _guests[index];
               return GuestCard(
                 name: guest['name'],
                 time: guest['time'],
                 avatarUrl: guest['avatar'],
                 inEvent: guest['inEvent'],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GuestProfileScreen(
+                      name: guest['name'],
+                      email: guest['email'],
+                      imageUrl: guest['avatar'],
+                    ),
+                  ),
+                ),
               );
             }),
           ],

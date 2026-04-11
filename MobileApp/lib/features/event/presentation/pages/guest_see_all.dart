@@ -15,7 +15,9 @@ class GuestsScreen extends StatefulWidget {
 
 class _GuestsScreenState extends State<GuestsScreen> {
   int _selectedIndex = 0;
-  final List<String> _tabs = ['All', 'In event', '582 PEOPLE'];
+  final List<String> _tabs = ['All', 'In event'];
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
 
   final List<Map<String, dynamic>> _guests = [
     {'name': 'Krittanai Ngampanja', 'email': 'krittanai@gmail.com', 'time': 'Joined 0 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k1', 'inEvent': false},
@@ -29,8 +31,20 @@ class _GuestsScreenState extends State<GuestsScreen> {
   ];
 
   List<Map<String, dynamic>> get _filteredGuests {
-    if (_selectedIndex == 1) return _guests.where((g) => g['inEvent'] == true).toList();
-    return _guests;
+    List<Map<String, dynamic>> list = _guests;
+    if (_selectedIndex == 1) {
+      list = list.where((g) => g['inEvent'] == true).toList();
+    }
+    if (_searchQuery.isNotEmpty) {
+      list = list.where((g) => (g['name'] as String).toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    }
+    return list;
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -45,6 +59,8 @@ class _GuestsScreenState extends State<GuestsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: TextField(
+              controller: _searchCtrl,
+              onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
                 hintText: 'Search...',
                 hintStyle: TextStyle(color: AppColors.textSecondary),
@@ -69,15 +85,29 @@ class _GuestsScreenState extends State<GuestsScreen> {
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Row(
-                children: List.generate(_tabs.length, (i) {
-                  return Expanded(
-                    child: SegmentButton(
-                      title: _tabs[i],
-                      selected: _selectedIndex == i,
-                      onTap: () => setState(() => _selectedIndex = i),
+                children: [
+                  ...List.generate(_tabs.length, (i) {
+                    return Expanded(
+                      child: SegmentButton(
+                        title: _tabs[i],
+                        selected: _selectedIndex == i,
+                        onTap: () => setState(() => _selectedIndex = i),
+                      ),
+                    );
+                  }),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '${_filteredGuests.length} PEOPLE',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
-                  );
-                }),
+                  ),
+                ],
               ),
             ),
           ),
