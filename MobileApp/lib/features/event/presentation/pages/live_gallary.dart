@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
-import '../../../../core/widgets/segment_button.dart';
+import 'photo_viewer_page.dart';
 
 class LiveGalleryScreen extends StatefulWidget {
   const LiveGalleryScreen({super.key});
@@ -11,49 +15,59 @@ class LiveGalleryScreen extends StatefulWidget {
 }
 
 class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
-  // เก็บสถานะว่าเลือกหมวดหมู่ไหนอยู่
-  int selectedIndex = 0;
-  final List<String> categories = ["All", "Couple", "Guests", "582 PHOTOS"]; // หมวดหมู่สุดท้ายเป็นตัวอย่างจำนวนรูปจากฐานข้อมูล
+  final ImagePicker _picker = ImagePicker();
+
+  final List<String> _uploaderNames = [
+    'Krittanai N.',
+    'Cheewanon S.',
+    'Somchai P.',
+    'Ploy R.',
+    'Nattha K.',
+    'Beam W.',
+    'Fern T.',
+    'Bank S.',
+  ];
+
+  late final List<GalleryPhoto> _samplePhotos = List.generate(8, (i) {
+    return GalleryPhoto(
+      imageUrl: 'https://picsum.photos/seed/${i + 50}/400',
+      uploaderName: _uploaderNames[i],
+      uploaderAvatar: 'https://i.pravatar.cc/150?u=gallery$i',
+      uploadTime: '${(i % 4) + 1}h ago',
+    );
+  });
+
+  final List<GalleryPhoto> _pickedPhotos = [];
+
+  Future<void> _pickImage() async {
+    final images = await _picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      setState(() {
+        _pickedPhotos.insertAll(
+          0,
+          images.map((x) => GalleryPhoto(
+                imageFile: File(x.path),
+                uploaderName: 'You',
+                uploaderAvatar: 'https://i.pravatar.cc/150?u=me',
+                uploadTime: 'Just now',
+              )),
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return AppDetailScaffold(
       title: 'Live Gallery',
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _pickImage,
         backgroundColor: AppColors.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),
       child: Column(
         children: [
-          // --- ส่วนของ Segmented Control ---
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: AppColors.segmentBackground,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                children: List.generate(categories.length, (index) {
-                  return Expanded(
-                    child: SegmentButton(
-                      title: categories[index],
-                      selected: selectedIndex == index,
-                      onTap: () {
-                        setState(() {
-                          selectedIndex = index;
-                        });
-                      },
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-
           // --- ส่วนของ Grid รูปภาพ ---
           Expanded(
             child: GridView.builder(
@@ -64,13 +78,21 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
                 mainAxisSpacing: 15,
                 childAspectRatio: 1, // รูปทรงจัตุรัส
               ),
-              itemCount: 8, // จำนวนรูปตัวอย่าง
+              itemCount: _pickedPhotos.length + _samplePhotos.length,
               itemBuilder: (context, index) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Image.network(
-                    'https://picsum.photos/seed/${index + 50}/400', // รูปจำลอง
-                    fit: BoxFit.cover,
+                final allPhotos = [..._pickedPhotos, ..._samplePhotos];
+                final photo = allPhotos[index];
+
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PhotoViewerPage(photo: photo)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: photo.imageFile != null
+                        ? Image.file(photo.imageFile!, fit: BoxFit.cover)
+                        : Image.network(photo.imageUrl!, fit: BoxFit.cover),
                   ),
                 );
               },
