@@ -24,8 +24,9 @@ class GalleryPhoto {
 
 class PhotoViewerPage extends StatefulWidget {
   final GalleryPhoto photo;
+  final bool isHost;
 
-  const PhotoViewerPage({super.key, required this.photo});
+  const PhotoViewerPage({super.key, required this.photo, this.isHost = false});
 
   @override
   State<PhotoViewerPage> createState() => _PhotoViewerPageState();
@@ -33,6 +34,31 @@ class PhotoViewerPage extends StatefulWidget {
 
 class _PhotoViewerPageState extends State<PhotoViewerPage> {
   bool _saving = false;
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Photo'),
+        content: const Text('Are you sure you want to delete this photo?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      Navigator.pop(context, true);
+    }
+  }
 
   Future<void> _downloadImage() async {
     if (_saving) return;
@@ -136,6 +162,23 @@ class _PhotoViewerPageState extends State<PhotoViewerPage> {
                     ),
                   ),
                   const Spacer(),
+                  if (widget.isHost)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: InkWell(
+                        onTap: _confirmDelete,
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
+                        ),
+                      ),
+                    ),
                   InkWell(
                     onTap: _saving ? null : _downloadImage,
                     borderRadius: BorderRadius.circular(14),

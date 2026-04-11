@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../../../core/widgets/app_switch.dart';
+import '../../../../core/widgets/guest_card.dart';
 import '../../domain/models/event_model.dart';
 import 'analytics_page.dart';
+import 'guest_see_all.dart';
 import 'photo_management_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -148,7 +150,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   title: 'Guest List',
                   subtitle: 'Manage attendees',
                   color: const Color(0xFF4CAF50),
-                  onTap: () {},
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GuestsScreen())),
                 ),
                 _MenuCard(
                   icon: Icons.photo_library_outlined,
@@ -243,7 +245,7 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 const Text('Guests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GuestsScreen())),
                   child: const Row(
                     children: [
                       Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.primary),
@@ -257,7 +259,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 12),
             ...List.generate(_guests.length, (index) {
               final guest = _guests[index];
-              return _GuestTile(
+              return GuestCard(
                 name: guest['name'],
                 time: guest['time'],
                 avatarUrl: guest['avatar'],
@@ -380,54 +382,3 @@ class _MenuCard extends StatelessWidget {
   }
 }
 
-// ── Guest Tile ──
-class _GuestTile extends StatelessWidget {
-  final String name;
-  final String time;
-  final String avatarUrl;
-  final bool inEvent;
-
-  const _GuestTile({
-    required this.name,
-    required this.time,
-    required this.avatarUrl,
-    required this.inEvent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(radius: 22, backgroundImage: NetworkImage(avatarUrl)),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 2),
-                Text(time, style: const TextStyle(fontSize: 12, color: AppColors.primary)),
-              ],
-            ),
-          ),
-          if (inEvent)
-            Column(
-              children: [
-                Icon(Icons.person_pin, size: 22, color: AppColors.primary),
-                const SizedBox(height: 2),
-                const Text('In event', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary)),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}

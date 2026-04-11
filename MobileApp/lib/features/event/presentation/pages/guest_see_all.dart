@@ -1,122 +1,114 @@
 import 'package:flutter/material.dart';
-import 'guest_profile.dart';
+
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../../../core/widgets/guest_card.dart';
+import '../../../../core/widgets/segment_button.dart';
+import 'guest_profile.dart';
 
-
-class GuestsScreen extends StatelessWidget {
+class GuestsScreen extends StatefulWidget {
   const GuestsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Guests', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: AppColors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
-              ),
-            ),
-          ),
-          
-          // รายชื่อ Guest
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                GuestTile(
-                  name: 'Cheewanon Srisawadwattana',
-                  email: 'sn.cheewa@gmail.com',
-                  time: 'Joined 9 minutes ago.',
-                  imageUrl: 'https://i.pravatar.cc/150?u=99',
-                  isInEvent: true,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GuestProfileScreen(
-                          name: 'Cheewanon Srisawadwattana',
-                          email: 'sn.cheewa@gmail.com',
-                          imageUrl: 'https://i.pravatar.cc/150?u=99',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                // เพิ่มรายการอื่นๆ ได้ที่นี่...
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<GuestsScreen> createState() => _GuestsScreenState();
 }
 
-class GuestTile extends StatelessWidget {
-  final String name;
-  final String email;
-  final String time;
-  final String imageUrl;
-  final bool isInEvent;
-  final VoidCallback onTap;
+class _GuestsScreenState extends State<GuestsScreen> {
+  int _selectedIndex = 0;
+  final List<String> _tabs = ['All', 'In event', '582 PEOPLE'];
 
-  const GuestTile({
-    super.key, 
-    required this.name, 
-    required this.email,
-    required this.time, 
-    required this.imageUrl, 
-    required this.onTap,
-    this.isInEvent = false
-  });
+  final List<Map<String, dynamic>> _guests = [
+    {'name': 'Krittanai Ngampanja', 'email': 'krittanai@gmail.com', 'time': 'Joined 0 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k1', 'inEvent': false},
+    {'name': 'Cheewanon Srisawadwattana', 'email': 'sn.cheewa@gmail.com', 'time': 'Joined 9 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k2', 'inEvent': true},
+    {'name': 'Cameron Williamson', 'email': 'cameron@gmail.com', 'time': 'Joined 10 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k3', 'inEvent': false},
+    {'name': 'Darrell Steward', 'email': 'darrell@gmail.com', 'time': 'Joined 10 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k4', 'inEvent': false},
+    {'name': 'Ralph Edwards', 'email': 'ralph@gmail.com', 'time': 'Joined 10 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k5', 'inEvent': false},
+    {'name': 'Darlene Robertson', 'email': 'darlene@gmail.com', 'time': 'Joined 30 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k6', 'inEvent': false},
+    {'name': 'Guy Hawkins', 'email': 'guy@gmail.com', 'time': 'Joined 40 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k7', 'inEvent': false},
+    {'name': 'Brooklyn Simmons', 'email': 'brooklyn@gmail.com', 'time': 'Joined 58 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k8', 'inEvent': false},
+  ];
+
+  List<Map<String, dynamic>> get _filteredGuests {
+    if (_selectedIndex == 1) return _guests.where((g) => g['inEvent'] == true).toList();
+    return _guests;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(radius: 25, backgroundImage: NetworkImage(imageUrl)),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text(time, style: const TextStyle(color: Color(0xFFB0ACD9), fontSize: 12)),
-                ],
+    final guests = _filteredGuests;
+
+    return AppDetailScaffold(
+      title: 'Guests',
+      child: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                hintStyle: TextStyle(color: AppColors.textSecondary),
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: AppColors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: AppColors.border)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary)),
               ),
             ),
-            if (isInEvent)
-              const Icon(Icons.location_on_outlined, color: Color(0xFF70C7B7), size: 20),
-          ],
-        ),
+          ),
+
+          // Segment Tabs
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: AppColors.segmentBackground,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                children: List.generate(_tabs.length, (i) {
+                  return Expanded(
+                    child: SegmentButton(
+                      title: _tabs[i],
+                      selected: _selectedIndex == i,
+                      onTap: () => setState(() => _selectedIndex = i),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+
+          // Guest List
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: guests.length,
+              itemBuilder: (context, index) {
+                final guest = guests[index];
+                return GuestCard(
+                  name: guest['name'],
+                  time: guest['time'],
+                  avatarUrl: guest['avatar'],
+                  inEvent: guest['inEvent'],
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => GuestProfileScreen(
+                        name: guest['name'],
+                        email: guest['email'],
+                        imageUrl: guest['avatar'],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

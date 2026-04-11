@@ -6,7 +6,8 @@ import '../pages/agenda_screen.dart';
 import '../pages/live_gallary.dart';
 
 class EventFeatureGrid extends StatelessWidget {
-  const EventFeatureGrid({super.key});
+  final bool isHost;
+  const EventFeatureGrid({super.key, this.isHost = false});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +44,7 @@ class EventFeatureGrid extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => LiveGalleryScreen(),
+                      builder: (context) => LiveGalleryScreen(isHost: isHost),
                     ),
                   );
                 },

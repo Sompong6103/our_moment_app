@@ -52,7 +52,7 @@ class EventDetailPage extends StatelessWidget {
             EventDetailHeader(event: event),
             const SizedBox(height: 20),
 
-            const EventFeatureGrid(),
+            EventFeatureGrid(isHost: event.isHost),
             const SizedBox(height: 24),
 
             const Text(

@@ -8,7 +8,8 @@ import '../../../../core/widgets/app_detail_scaffold.dart';
 import 'photo_viewer_page.dart';
 
 class LiveGalleryScreen extends StatefulWidget {
-  const LiveGalleryScreen({super.key});
+  final bool isHost;
+  const LiveGalleryScreen({super.key, this.isHost = false});
 
   @override
   State<LiveGalleryScreen> createState() => _LiveGalleryScreenState();
@@ -84,10 +85,23 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
                 final photo = allPhotos[index];
 
                 return GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => PhotoViewerPage(photo: photo)),
-                  ),
+                  onTap: () async {
+                    final deleted = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PhotoViewerPage(
+                          photo: photo,
+                          isHost: widget.isHost,
+                        ),
+                      ),
+                    );
+                    if (deleted == true) {
+                      setState(() {
+                        _pickedPhotos.remove(photo);
+                        _samplePhotos.remove(photo);
+                      });
+                    }
+                  },
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(15),
                     child: photo.imageFile != null
