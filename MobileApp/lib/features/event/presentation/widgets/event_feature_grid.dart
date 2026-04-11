@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../presentation/pages/wish_wall_screen.dart';
+import '../pages/wish_wall_screen.dart';
 import '../pages/event_map_page.dart';
+import '../pages/agenda_screen.dart';
 
 class EventFeatureGrid extends StatelessWidget {
   const EventFeatureGrid({super.key});
@@ -19,7 +20,13 @@ class EventFeatureGrid extends StatelessWidget {
                 iconColor: AppColors.primary,
                 title: 'Agenda',
                 subtitle: 'Event Schedule',
-                onTap: () {},
+                onTap: () {
+                  // Navigate to Agenda Screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AgendaScreen()),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
