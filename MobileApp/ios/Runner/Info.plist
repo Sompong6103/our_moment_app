@@ -8,6 +8,8 @@
 	<string>We need access to your photo library to choose an event banner image.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to take an event banner photo.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to show your current position on the map.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

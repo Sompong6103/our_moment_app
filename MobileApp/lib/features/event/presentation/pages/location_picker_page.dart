@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
@@ -26,31 +28,73 @@ class LocationPickerPage extends StatefulWidget {
 class _LocationPickerPageState extends State<LocationPickerPage> {
   late final MapController _mapController;
   LatLng? _selectedLatLng;
+  LatLng? _currentLocation;
   String? _addressLabel;
   bool _loading = false;
   final TextEditingController _searchCtrl = TextEditingController();
   List<_SearchResult> _searchResults = [];
   bool _showResults = false;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
     _selectedLatLng = widget.initialLocation;
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      if (mounted) {
+        setState(() {
+          _currentLocation = LatLng(position.latitude, position.longitude);
+        });
+        if (_selectedLatLng == null && widget.initialLocation == null) {
+          _mapController.move(_currentLocation!, 14);
+        }
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     _mapController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _showResults = false;
+      });
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _searchPlace(query);
+    });
   }
 
   Future<void> _reverseGeocode(LatLng pos) async {
     setState(() => _loading = true);
     try {
       final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&addressdetails=1',
+        'https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&addressdetails=1&accept-language=th',
       );
       final response = await http.get(url, headers: {'User-Agent': 'OurMomentApp/1.0'});
       if (response.statusCode == 200) {
@@ -74,7 +118,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
     }
     try {
       final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=5',
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=5&countrycodes=th&accept-language=th',
       );
       final response = await http.get(url, headers: {'User-Agent': 'OurMomentApp/1.0'});
       if (response.statusCode == 200) {
@@ -144,6 +188,26 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.ourmoment.app',
               ),
+              if (_currentLocation != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _currentLocation!,
+                      width: 20,
+                      height: 20,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(color: Colors.blue.withValues(alpha: 0.3), blurRadius: 8, spreadRadius: 2),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               if (_selectedLatLng != null)
                 MarkerLayer(
                   markers: [
@@ -188,7 +252,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                   Expanded(
                     child: TextField(
                       controller: _searchCtrl,
-                      onChanged: _searchPlace,
+                      onChanged: _onSearchChanged,
                       decoration: InputDecoration(
                         hintText: 'Search location...',
                         hintStyle: TextStyle(fontSize: 14, color: AppColors.textSecondary),
@@ -235,6 +299,24 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                 ),
               ),
             ),
+
+          // ── My Location button ──
+          Positioned(
+            bottom: 180,
+            right: 16,
+            child: FloatingActionButton.small(
+              heroTag: 'myLocation',
+              backgroundColor: Colors.white,
+              onPressed: () {
+                if (_currentLocation != null) {
+                  _mapController.move(_currentLocation!, 16);
+                } else {
+                  _getCurrentLocation();
+                }
+              },
+              child: const Icon(Icons.my_location, color: AppColors.primary, size: 22),
+            ),
+          ),
 
           // ── Bottom card ──
           Positioned(
