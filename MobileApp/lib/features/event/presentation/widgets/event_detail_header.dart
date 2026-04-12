@@ -5,8 +5,13 @@ import 'attendee_avatars.dart';
 
 class EventDetailHeader extends StatelessWidget {
   final EventModel event;
+  final List<String> attendeeAvatarUrls;
 
-  const EventDetailHeader({super.key, required this.event});
+  const EventDetailHeader({
+    super.key,
+    required this.event,
+    this.attendeeAvatarUrls = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +80,7 @@ class EventDetailHeader extends StatelessWidget {
 
         AttendeeAvatars(
           count: event.attendeeCount,
+          avatarUrls: attendeeAvatarUrls,
           avatarSize: 30,
           label: '${event.joinedCount ?? event.attendeeCount} People are joined',
         ),

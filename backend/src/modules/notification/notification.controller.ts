@@ -22,12 +22,12 @@ export const notificationController = {
 
   async announce(req: Request, res: Response) {
     try {
-      const { title, message } = req.body;
+      const { title, message, target } = req.body;
       if (!title || !message) {
         res.status(400).json({ error: 'Title and message are required' });
         return;
       }
-      const result = await notificationService.announce(req.params.eventId as string, title, message);
+      const result = await notificationService.announce(req.params.eventId as string, title, message, target || 'all');
       res.json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });

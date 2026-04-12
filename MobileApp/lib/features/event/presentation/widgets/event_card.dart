@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_config.dart';
+import '../../data/repositories/guest_repository.dart';
 import '../../domain/models/event_model.dart';
 import '../pages/event_detail_page.dart';
 import 'attendee_avatars.dart';
@@ -113,13 +115,46 @@ class _CoverImage extends StatelessWidget {
   }
 }
 
-class _OrganizerRow extends StatelessWidget {
+class _OrganizerRow extends StatefulWidget {
   final EventModel event;
 
   const _OrganizerRow({required this.event});
 
   @override
+  State<_OrganizerRow> createState() => _OrganizerRowState();
+}
+
+class _OrganizerRowState extends State<_OrganizerRow> {
+  final _guestRepo = GuestRepository();
+  List<String> _avatarUrls = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAttendeeAvatars();
+  }
+
+  Future<void> _loadAttendeeAvatars() async {
+    try {
+      final guests = await _guestRepo.list(widget.event.id);
+      final urls = guests
+          .map((g) => (g['user'] as Map<String, dynamic>?)?['avatarUrl']?.toString() ?? '')
+          .where((u) => u.isNotEmpty)
+          .map((u) => u.startsWith('http') ? u : '${ApiConfig.uploadsUrl}/$u')
+          .take(3)
+          .toList();
+
+      if (mounted) {
+        setState(() => _avatarUrls = urls);
+      }
+    } catch (_) {
+      // Keep fallback placeholder avatars on API failure.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final event = widget.event;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
@@ -140,7 +175,7 @@ class _OrganizerRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          AttendeeAvatars(count: event.attendeeCount),
+          AttendeeAvatars(count: event.attendeeCount, avatarUrls: _avatarUrls),
         ],
       ),
     );

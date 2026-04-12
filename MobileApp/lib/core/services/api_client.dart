@@ -134,12 +134,20 @@ class ApiClient {
       switch (method) {
         case 'POST':
           response = await _client
-              .post(uri, headers: _headers(auth: auth, token: token), body: jsonEncode(body))
+              .post(
+                uri,
+                headers: _headers(auth: auth, token: token),
+                body: body != null ? jsonEncode(body) : null,
+              )
               .timeout(ApiConfig.connectTimeout);
           break;
         case 'PATCH':
           response = await _client
-              .patch(uri, headers: _headers(auth: auth, token: token), body: jsonEncode(body))
+              .patch(
+                uri,
+                headers: _headers(auth: auth, token: token),
+                body: body != null ? jsonEncode(body) : null,
+              )
               .timeout(ApiConfig.connectTimeout);
           break;
         case 'DELETE':

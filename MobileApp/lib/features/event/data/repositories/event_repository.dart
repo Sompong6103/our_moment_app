@@ -127,4 +127,13 @@ class EventRepository {
     final result = await _api.patch('/events/$eventId', body: data, auth: true);
     return EventModel.fromJson(result);
   }
+
+  Future<Map<String, dynamic>> announce(String eventId, {required String title, required String message, String target = 'all'}) async {
+    final result = await _api.post('/events/$eventId/announce', body: {
+      'title': title,
+      'message': message,
+      'target': target,
+    }, auth: true);
+    return result;
+  }
 }

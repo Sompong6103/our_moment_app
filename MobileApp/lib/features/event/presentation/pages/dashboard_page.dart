@@ -63,6 +63,140 @@ class _DashboardPageState extends State<DashboardPage> {
     } catch (_) {}
   }
 
+  void _showAnnouncementSheet() {
+    final messageController = TextEditingController();
+    String target = 'all';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Send Announcement', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: messageController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Type your announcement message...',
+                    hintStyle: TextStyle(color: AppColors.textSecondary),
+                    filled: true,
+                    fillColor: const Color(0xFFF6F6F8),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Send to', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setSheetState(() => target = 'all'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: target == 'all' ? AppColors.primary : const Color(0xFFF6F6F8),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'All Guests',
+                            style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                              color: target == 'all' ? Colors.white : AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setSheetState(() => target = 'checked_in'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: target == 'checked_in' ? AppColors.primary : const Color(0xFFF6F6F8),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Checked-in Only',
+                            style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                              color: target == 'checked_in' ? Colors.white : AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final msg = messageController.text.trim();
+                      if (msg.isEmpty) return;
+                      Navigator.pop(ctx);
+                      try {
+                        final result = await _eventRepo.announce(
+                          _event.id,
+                          title: 'Announcement',
+                          message: msg,
+                          target: target,
+                        );
+                        if (mounted) {
+                          final count = result['recipientCount'] ?? 0;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Announcement sent to $count guest${count == 1 ? '' : 's'}')),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to send: $e')),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Send Announcement', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _loadData() async {
     try {
       final results = await Future.wait([
@@ -469,7 +603,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     icon: Icons.photo_library_outlined,
                     title: 'Photos',
                     color: const Color(0xFFFF9800),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveGalleryScreen(isHost: true, eventId: _event.id))),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveGalleryScreen(isHost: true, eventId: _event.id, acceptPhotos: _event.acceptPhotos))),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -539,7 +673,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Divider(height: 1, color: AppColors.border),
                   ),
                   InkWell(
-                    onTap: () {},
+                    onTap: () => _showAnnouncementSheet(),
                     child: Row(
                       children: [
                         Container(

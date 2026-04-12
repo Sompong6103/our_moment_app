@@ -47,7 +47,7 @@ class EventFeatureGrid extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => LiveGalleryScreen(isHost: isHost, eventId: eventId),
+                      builder: (context) => LiveGalleryScreen(isHost: isHost, eventId: eventId, acceptPhotos: event?.acceptPhotos ?? false),
                     ),
                   );
                 },

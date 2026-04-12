@@ -41,13 +41,7 @@ class _GuestDetailsPageState extends State<GuestDetailsPage> {
         followersCount: _followers,
       );
       if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Joined ${widget.event.title} successfully!'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        Navigator.of(context).pop(true);
       }
     } on ApiException catch (e) {
       if (mounted) {

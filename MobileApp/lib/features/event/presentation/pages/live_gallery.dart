@@ -11,7 +11,8 @@ import 'photo_viewer_page.dart';
 class LiveGalleryScreen extends StatefulWidget {
   final bool isHost;
   final String? eventId;
-  const LiveGalleryScreen({super.key, this.isHost = false, this.eventId});
+  final bool acceptPhotos;
+  const LiveGalleryScreen({super.key, this.isHost = false, this.eventId, this.acceptPhotos = false});
 
   @override
   State<LiveGalleryScreen> createState() => _LiveGalleryScreenState();
@@ -74,12 +75,14 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
   Widget build(BuildContext context) {
     return AppDetailScaffold(
       title: 'Live Gallery',
-      floatingActionButton: FloatingActionButton(
-        onPressed: _pickImage,
-        backgroundColor: AppColors.primary,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
-      ),
+      floatingActionButton: (widget.isHost || widget.acceptPhotos)
+          ? FloatingActionButton(
+              onPressed: _pickImage,
+              backgroundColor: AppColors.primary,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.add, color: Colors.white, size: 30),
+            )
+          : null,
       child: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(

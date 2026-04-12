@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 /// _AttendeesRow in detail_event_header.
 class AttendeeAvatars extends StatelessWidget {
   final int count;
+  final List<String> avatarUrls;
   final double avatarSize;
   final double overlap;
   final String? label;
@@ -14,6 +15,7 @@ class AttendeeAvatars extends StatelessWidget {
   const AttendeeAvatars({
     super.key,
     required this.count,
+    this.avatarUrls = const [],
     this.avatarSize = 26,
     this.overlap = 10,
     this.label,
@@ -41,7 +43,10 @@ class AttendeeAvatars extends StatelessWidget {
                   child: CircleAvatar(
                     radius: avatarSize / 2,
                     backgroundColor: Colors.grey[300],
-                    child: Icon(Icons.person, size: avatarSize * 0.5, color: Colors.white),
+                    backgroundImage: i < avatarUrls.length ? NetworkImage(avatarUrls[i]) : null,
+                    child: i >= avatarUrls.length
+                        ? Icon(Icons.person, size: avatarSize * 0.5, color: Colors.white)
+                        : null,
                   ),
                 ),
               if (hasExtras)

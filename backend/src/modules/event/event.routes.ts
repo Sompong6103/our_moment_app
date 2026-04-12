@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { eventController } from './event.controller';
+import { notificationController } from '../notification/notification.controller';
 import { authenticate } from '../../middleware/auth';
 import { requireHost } from '../../middleware/role';
 import { validate } from '../../middleware/validate';
@@ -18,5 +19,6 @@ router.patch('/:eventId', requireHost, validate(updateEventSchema), eventControl
 router.post('/:eventId/cover', requireHost, upload.single('cover'), eventController.uploadCover);
 router.put('/:eventId/publish', requireHost, eventController.publish);
 router.delete('/:eventId', requireHost, eventController.remove);
+router.post('/:eventId/announce', requireHost, notificationController.announce);
 
 export default router;

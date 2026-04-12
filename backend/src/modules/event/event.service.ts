@@ -86,9 +86,9 @@ export const eventService = {
     return event;
   },
 
-  async getByJoinCode(joinCode: string) {
+  async getByJoinCode(joinCode: string) {    
     const event = await prisma.event.findFirst({
-      where: { joinCode: joinCode.toUpperCase(), deletedAt: null, status: 'published' },
+      where: { joinCode: joinCode.toUpperCase(), deletedAt: null },
       include: {
         organizer: { select: { id: true, fullName: true, avatarUrl: true } },
         location: true,

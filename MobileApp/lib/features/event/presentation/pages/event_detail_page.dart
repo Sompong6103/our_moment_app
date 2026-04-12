@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/api_client.dart';
+import '../../../../core/services/api_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../data/repositories/guest_repository.dart';
@@ -21,7 +22,45 @@ class EventDetailPage extends StatefulWidget {
 
 class _EventDetailPageState extends State<EventDetailPage> {
   bool _checkedIn = false;
+  late bool _showJoinButton;
+  late bool _joined;
+  List<String> _attendeeAvatarUrls = const [];
   final _guestRepo = GuestRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _showJoinButton = widget.showJoinButton;
+    _joined = widget.event.isJoined;
+    _loadAttendeeAvatars();
+  }
+
+  Future<void> _loadAttendeeAvatars() async {
+    try {
+      final guests = await _guestRepo.list(widget.event.id);
+      final urls = guests
+          .map((g) => (g['user'] as Map<String, dynamic>?)?['avatarUrl']?.toString() ?? '')
+          .where((u) => u.isNotEmpty)
+          .map((u) => u.startsWith('http') ? u : '${ApiConfig.uploadsUrl}/$u')
+          .take(3)
+          .toList();
+
+      if (mounted) {
+        setState(() => _attendeeAvatarUrls = urls);
+      }
+    } catch (_) {
+      // Keep fallback placeholder avatars when API is unavailable.
+    }
+  }
+
+  bool get _canAttendEvent {
+    final eventDate = widget.event.eventDateTime;
+    if (widget.event.isHost || !_joined || eventDate == null) return false;
+    final now = DateTime.now();
+    return now.year == eventDate.year &&
+        now.month == eventDate.month &&
+        now.day == eventDate.day;
+  }
 
   void _handleCheckIn() async {
     try {
@@ -41,6 +80,28 @@ class _EventDetailPageState extends State<EventDetailPage> {
           SnackBar(content: Text(e.message), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  Future<void> _openGuestDetails() async {
+    final joined = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GuestDetailsPage(event: widget.event),
+      ),
+    );
+
+    if (joined == true && mounted) {
+      setState(() {
+        _showJoinButton = false;
+        _joined = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Joined ${widget.event.title} successfully!'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
     }
   }
 
@@ -86,7 +147,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  EventDetailHeader(event: event),
+                  EventDetailHeader(event: event, attendeeAvatarUrls: _attendeeAvatarUrls),
                   const SizedBox(height: 20),
 
                   EventFeatureGrid(isHost: event.isHost, eventId: event.id, event: event),
@@ -145,34 +206,28 @@ class _EventDetailPageState extends State<EventDetailPage> {
               ),
             ),
           ),
-          // ── Join button (first time) ──
-          if (widget.showJoinButton)
+          // ── Join button (register to attend) ──
+          if (_showJoinButton)
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                 child: SizedBox(
                   width: double.infinity,
                   height: 52,
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => GuestDetailsPage(event: event),
-                        ),
-                      );
-                    },
+                  child: FilledButton.icon(
+                    onPressed: _openGuestDetails,
+                    icon: const Icon(Icons.how_to_reg_outlined, size: 20),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     ),
-                    child: const Text('Attend the event', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    label: const Text('Join Event', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ),
             ),
           // ── Check-in button (joined guest on event day) ──
-          if (!widget.showJoinButton && event.canCheckIn)
+          if (!_showJoinButton && _canAttendEvent)
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -183,7 +238,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     onPressed: _checkedIn ? null : _handleCheckIn,
                     icon: Icon(_checkedIn ? Icons.check_circle : Icons.login_rounded, size: 20),
                     label: Text(
-                      _checkedIn ? 'Checked in' : 'Check in',
+                      _checkedIn ? 'Checked in' : 'Check in to Event',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     style: FilledButton.styleFrom(

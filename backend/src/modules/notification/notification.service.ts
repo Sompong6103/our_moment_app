@@ -17,16 +17,20 @@ export const notificationService = {
     });
   },
 
-  async announce(eventId: string, title: string, message: string) {
+  async announce(eventId: string, title: string, message: string, target: 'all' | 'checked_in' = 'all') {
     const event = await prisma.event.findFirst({
       where: { id: eventId, deletedAt: null },
       select: { id: true, title: true },
     });
     if (!event) throw new Error('Event not found');
 
-    // Get all guests
+    // Get guests based on target
+    const whereClause: any = { eventId };
+    if (target === 'checked_in') {
+      whereClause.status = 'checked_in';
+    }
     const guests = await prisma.eventGuest.findMany({
-      where: { eventId },
+      where: whereClause,
       select: { userId: true },
     });
 
