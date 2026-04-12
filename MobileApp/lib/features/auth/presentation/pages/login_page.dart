@@ -4,6 +4,8 @@ import '../../../../core/routes/app_routes.dart';
 import '../../../../core/widgets/app_primary_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_password_field.dart';
+import '../../../../core/services/api_client.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../widgets/auth_layout.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,7 +16,63 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _rememberMe = false;
+  bool _loading = false;
+  final _authRepo = AuthRepository();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter email and password');
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await _authRepo.login(email: email, password: password);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('Connection error. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _loading = true);
+    try {
+      await _authRepo.googleSignIn();
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('Google sign-in failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: _loading ? null : _handleGoogleSignIn,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.border),
                 minimumSize: const Size.fromHeight(52),
@@ -84,15 +142,17 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
           const SizedBox(height: 24),
-          const AppTextField(
+          AppTextField(
             label: 'Email',
             hintText: 'Enter your email',
             keyboardType: TextInputType.emailAddress,
+            controller: _emailController,
           ),
           const SizedBox(height: 14),
-          const AppPasswordField(
+          AppPasswordField(
             label: 'Password',
             hintText: 'Enter your password',
+            controller: _passwordController,
           ),
           const SizedBox(height: 6),
           Row(
@@ -129,10 +189,8 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: 8),
           AppPrimaryButton(
-            label: 'Login',
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, AppRoutes.home);
-            },
+            label: _loading ? 'Logging in...' : 'Login',
+            onPressed: _loading ? null : _handleLogin,
           ),
           const SizedBox(height: 14),
           Center(
