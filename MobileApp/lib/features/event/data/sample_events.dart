@@ -3,6 +3,7 @@ import '../domain/models/event_model.dart';
 
 final sampleEvents = [
   EventModel(
+    id: 'sample-1',
     title: "Aom & Ton's Wedding",
     type: 'Wedding ceremony',
     date: 'Sat, 25 Oct 2025',
@@ -21,6 +22,7 @@ final sampleEvents = [
     eventDateTime: DateTime(2025, 10, 25),
   ),
   EventModel(
+    id: 'sample-2',
     title: "Aom & Ton's Wedding",
     type: 'Wedding ceremony',
     date: '16 Feb 2026',
@@ -39,6 +41,7 @@ final sampleEvents = [
     eventDateTime: DateTime(2026, 2, 16),
   ),
   EventModel(
+    id: 'sample-3',
     title: "Aom & Ton's Wedding",
     type: 'Wedding ceremony',
     date: '12 Apr 2026',

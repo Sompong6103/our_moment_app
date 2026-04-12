@@ -1,33 +1,54 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../../../core/widgets/app_switch.dart';
+import '../../data/repositories/event_repository.dart';
 import '../../domain/models/agenda_item.dart';
 import '../widgets/agenda_timeline.dart';
 
 class AgendaScreen extends StatefulWidget {
-  const AgendaScreen({super.key});
+  final String eventId;
+  const AgendaScreen({super.key, required this.eventId});
 
   @override
   State<AgendaScreen> createState() => _AgendaScreenState();
 }
 
 class _AgendaScreenState extends State<AgendaScreen> {
-  // ข้อมูลจำลองสำหรับ Agenda
-  final List<AgendaItem> agendaItems = List.generate(4, (index) => const AgendaItem(
-    dateTime: "Sat, 25 Oct 2025 | 18:00",
-    title: "Buddhist ceremony",
-    description: "Offering food to nine monks.",
-    location: "ห้อง Grand 2",
-  )); //ต้องดึงข้อมูลจริงจาก backend มาแทน
+  final _eventRepo = EventRepository();
+  List<AgendaItem> agendaItems = [];
+  List<bool> _notifyStates = [];
+  bool _loading = true;
 
-  final List<bool> _notifyStates = List.generate(4, (_) => false);
+  @override
+  void initState() {
+    super.initState();
+    _loadAgenda();
+  }
+
+  Future<void> _loadAgenda() async {
+    try {
+      final items = await _eventRepo.getAgenda(widget.eventId);
+      if (mounted) {
+        setState(() {
+          agendaItems = items;
+          _notifyStates = List.generate(items.length, (_) => false);
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return AppDetailScaffold(
       title: 'Agenda',
-      child: Column(
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(

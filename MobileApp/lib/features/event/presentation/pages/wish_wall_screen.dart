@@ -1,29 +1,48 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_client.dart';
+import '../../../../core/services/token_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../data/repositories/wish_repository.dart';
 
 class WishWallScreen extends StatefulWidget {
-  const WishWallScreen({super.key});
+  final String eventId;
+  const WishWallScreen({super.key, required this.eventId});
 
   @override
   State<WishWallScreen> createState() => _WishWallScreenState();
 }
 
 class _WishWallScreenState extends State<WishWallScreen> {
-  // 1. ตัวแปรเก็บรายการคำอวยพร (เริ่มต้นเป็นลิสต์ว่างแสดงหน้า Empty wish wall)
-  final List<Map<String, String>> _wishes = [];
-
-  // 2. Controller สำหรับรับค่าจากช่องพิมพ์
+  final _wishRepo = WishRepository();
+  List<Map<String, dynamic>> _wishes = [];
   final TextEditingController _textController = TextEditingController();
-
-  // 3. ตัวแปรสถานะว่าผู้ใช้ส่งคำอวยพรแล้วหรือยัง (local state เท่านั้น)
   bool _hasWished = false;
-
+  bool _loading = true;
+  bool _sending = false;
 
   @override
   void initState() {
     super.initState();
-    // ไม่มีการโหลดสถานะจาก storage แล้ว
+    _loadWishes();
+  }
+
+  Future<void> _loadWishes() async {
+    try {
+      final wishes = await _wishRepo.list(widget.eventId);
+      // Check if current user already sent a wish
+      final userId = await TokenStorage().getUserId();
+      bool alreadyWished = false;
+      if (userId != null) {
+        alreadyWished = wishes.any((w) {
+          final u = w['user'] as Map<String, dynamic>?;
+          return u?['id'] == userId || w['userId'] == userId;
+        });
+      }
+      if (mounted) setState(() { _wishes = wishes; _hasWished = alreadyWished; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -32,21 +51,44 @@ class _WishWallScreenState extends State<WishWallScreen> {
     super.dispose();
   }
 
-  // ฟังก์ชันสำหรับเพิ่มคำอวยพร
-  void _sendWish() {
-    if (_textController.text.trim().isNotEmpty && !_hasWished) {
-      setState(() {
-        _wishes.insert(0, {
-          "name": "Guest User",
-          "wish": "“${_textController.text}”",
-          "time": "Just now",
-          "avatar": "https://i.pravatar.cc/150?u=guest"
-        });
-        _textController.clear();
-        _hasWished = true;
-      });
-      // TODO: ในอนาคตให้เช็คกับ API ว่าส่งแล้วจริงหรือไม่
+  Future<void> _sendWish() async {
+    if (_textController.text.trim().isEmpty || _hasWished || _sending) return;
+    setState(() => _sending = true);
+    try {
+      await _wishRepo.create(widget.eventId, _textController.text.trim());
+      _textController.clear();
+      setState(() { _hasWished = true; _sending = false; });
+      _loadWishes();
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _sending = false);
+        if (e.statusCode == 409) {
+          setState(() => _hasWished = true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message)),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _sending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send wish: $e')),
+        );
+      }
     }
+  }
+
+  String _timeAgo(String? iso) {
+    if (iso == null) return '';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return '';
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   @override
@@ -55,21 +97,19 @@ class _WishWallScreenState extends State<WishWallScreen> {
       title: 'Guest Wishes Wall',
       child: Column(
         children: [
-          // แสดงเนื้อหา
           Expanded(
-            child: _wishes.isEmpty 
-              ? _buildEmptyState() // ไม่มีคำอวยพร 
-              : _buildWishList(),   // มีคำอวยพร 
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _wishes.isEmpty
+                    ? _buildEmptyState()
+                    : _buildWishList(),
           ),
-
-          // ช่องกรอกข้อความด้านล่าง
           _buildInputArea(),
         ],
       ),
     );
   }
 
-  // --- UI สำหรับกรณีไม่มีข้อมูล ---
   Widget _buildEmptyState() {
     return Center(
       child: SingleChildScrollView(
@@ -80,7 +120,7 @@ class _WishWallScreenState extends State<WishWallScreen> {
             Opacity(
               opacity: 0.8,
               child: Image.asset(
-                'assets/images/empty_wishwall.png', // รูปแทนตัวอย่าง
+                'assets/images/empty_wishwall.png',
                 height: 200,
               ),
             ),
@@ -102,13 +142,18 @@ class _WishWallScreenState extends State<WishWallScreen> {
     );
   }
 
-  // --- UI สำหรับกรณีมีรายการคำอวยพร ---
   Widget _buildWishList() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       itemCount: _wishes.length,
       itemBuilder: (context, index) {
-        final item = _wishes[index]; // ดึงข้อมูลคำอวยพรแต่ละรายการ
+        final item = _wishes[index];
+        final user = item['user'] as Map<String, dynamic>? ?? {};
+        final name = user['fullName'] ?? 'Guest';
+        final avatar = user['avatarUrl'] ?? '';
+        final message = item['message'] ?? '';
+        final time = _timeAgo(item['createdAt']);
+
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(20),
@@ -124,17 +169,17 @@ class _WishWallScreenState extends State<WishWallScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                item['wish']!, // แสดงข้อความอวยพร
+                '\u201c$message\u201d',
                 style: const TextStyle(fontSize: 15, height: 1.5, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  CircleAvatar(radius: 14, backgroundImage: NetworkImage(item['avatar']!)),
+                  CircleAvatar(radius: 14, backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null),
                   const SizedBox(width: 10),
-                  Text(item['name']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const Spacer(),
-                  Text(item['time']!, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  Text(time, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 ],
               ),
             ],
@@ -144,13 +189,12 @@ class _WishWallScreenState extends State<WishWallScreen> {
     );
   }
 
-  // --- UI ส่วนแถบรับข้อความด้านล่าง ---
   Widget _buildInputArea() {
     if (_hasWished) {
       return Container(
         padding: const EdgeInsets.all(20),
         child: const Text(
-          'คุณได้ส่งคำอวยพรไปแล้ว',
+          'You have already sent your wish',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
         ),
       );
@@ -173,7 +217,7 @@ class _WishWallScreenState extends State<WishWallScreen> {
                 ),
                 child: TextField(
                   controller: _textController,
-                  enabled: !_hasWished,
+                  enabled: !_sending,
                   decoration: const InputDecoration(
                     hintText: "Aa",
                     border: InputBorder.none,
@@ -183,10 +227,12 @@ class _WishWallScreenState extends State<WishWallScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.indigo),
-              onPressed: _hasWished ? null : _sendWish,
-            ),
+            _sending
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                : IconButton(
+                    icon: const Icon(Icons.chat_bubble_rounded, color: Colors.indigo),
+                    onPressed: _sendWish,
+                  ),
           ],
         ),
       ),

@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../core/services/api_config.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/repositories/photo_repository.dart';
 
 class GalleryPhoto {
+  final String? id;
   final String? imageUrl;
   final File? imageFile;
   final String uploaderName;
@@ -14,19 +17,63 @@ class GalleryPhoto {
   final String uploadTime;
 
   const GalleryPhoto({
+    this.id,
     this.imageUrl,
     this.imageFile,
     required this.uploaderName,
     required this.uploaderAvatar,
     required this.uploadTime,
   });
+
+  factory GalleryPhoto.fromJson(Map<String, dynamic> json) {
+    String uploaderName = 'Unknown';
+    String uploaderAvatar = '';
+    if (json['uploader'] is Map) {
+      uploaderName = json['uploader']['fullName'] ?? 'Unknown';
+      uploaderAvatar = json['uploader']['avatarUrl'] ?? '';
+    }
+
+    String? imageUrl;
+    final rawUrl = json['imageUrl'] ?? json['url'];
+    if (rawUrl != null) {
+      final url = rawUrl as String;
+      imageUrl = url.startsWith('http') ? url : '${ApiConfig.uploadsUrl}/$url';
+    }
+
+    String uploadTime = '';
+    final timeStr = json['uploadedAt'] ?? json['createdAt'];
+    if (timeStr != null) {
+      final dt = DateTime.tryParse(timeStr);
+      if (dt != null) {
+        final diff = DateTime.now().difference(dt);
+        if (diff.inMinutes < 1) {
+          uploadTime = 'Just now';
+        } else if (diff.inHours < 1) {
+          uploadTime = '${diff.inMinutes}m ago';
+        } else if (diff.inDays < 1) {
+          uploadTime = '${diff.inHours}h ago';
+        } else {
+          uploadTime = '${diff.inDays}d ago';
+        }
+      }
+    }
+
+    return GalleryPhoto(
+      id: json['id'],
+      imageUrl: imageUrl,
+      uploaderName: uploaderName,
+      uploaderAvatar: uploaderAvatar,
+      uploadTime: uploadTime,
+    );
+  }
 }
 
 class PhotoViewerPage extends StatefulWidget {
   final GalleryPhoto photo;
   final bool isHost;
+  final String? eventId;
 
-  const PhotoViewerPage({super.key, required this.photo, this.isHost = false});
+  const PhotoViewerPage({super.key, required this.photo, this.isHost = false, this.eventId});
 
   @override
   State<PhotoViewerPage> createState() => _PhotoViewerPageState();
@@ -56,7 +103,23 @@ class _PhotoViewerPageState extends State<PhotoViewerPage> {
       ),
     );
     if (confirmed == true && mounted) {
-      Navigator.pop(context, true);
+      try {
+        if (widget.eventId != null && widget.photo.id != null) {
+          await PhotoRepository().delete(widget.eventId!, widget.photo.id!);
+        }
+        if (mounted) Navigator.pop(context, true);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete: $e'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
     }
   }
 

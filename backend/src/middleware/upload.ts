@@ -23,11 +23,25 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  if (allowedMimes.includes(file.mimetype)) {
+  const allowedMimes = [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'image/heic', 'image/heif', 'image/bmp', 'image/tiff',
+    'image/svg+xml', 'image/avif',
+  ];
+  const allowedExts = [
+    '.jpg', '.jpeg', '.png', '.webp', '.gif',
+    '.heic', '.heif', '.bmp', '.tiff', '.tif',
+    '.svg', '.avif',
+  ];
+  const ext = path.extname(file.originalname).toLowerCase();
+  // Accept if mime starts with image/ OR mime is in list OR extension matches
+  if (file.mimetype.startsWith('image/') || allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
+    cb(null, true);
+  } else if (file.mimetype === 'application/octet-stream' && allowedExts.includes(ext)) {
+    // iOS sometimes sends HEIC as octet-stream
     cb(null, true);
   } else {
-    cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'));
+    cb(new Error('Only image files are allowed'));
   }
 };
 

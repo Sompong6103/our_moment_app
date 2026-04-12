@@ -4,10 +4,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../../../core/widgets/guest_card.dart';
 import '../../../../core/widgets/segment_button.dart';
+import '../../data/repositories/guest_repository.dart';
 import 'guest_profile.dart';
 
 class GuestsScreen extends StatefulWidget {
-  const GuestsScreen({super.key});
+  final String eventId;
+  const GuestsScreen({super.key, required this.eventId});
 
   @override
   State<GuestsScreen> createState() => _GuestsScreenState();
@@ -19,24 +21,36 @@ class _GuestsScreenState extends State<GuestsScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> _guests = [
-    {'name': 'Krittanai Ngampanja', 'email': 'krittanai@gmail.com', 'time': 'Joined 0 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k1', 'inEvent': false},
-    {'name': 'Cheewanon Srisawadwattana', 'email': 'sn.cheewa@gmail.com', 'time': 'Joined 9 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k2', 'inEvent': true},
-    {'name': 'Cameron Williamson', 'email': 'cameron@gmail.com', 'time': 'Joined 10 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k3', 'inEvent': false},
-    {'name': 'Darrell Steward', 'email': 'darrell@gmail.com', 'time': 'Joined 10 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k4', 'inEvent': false},
-    {'name': 'Ralph Edwards', 'email': 'ralph@gmail.com', 'time': 'Joined 10 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k5', 'inEvent': false},
-    {'name': 'Darlene Robertson', 'email': 'darlene@gmail.com', 'time': 'Joined 30 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k6', 'inEvent': false},
-    {'name': 'Guy Hawkins', 'email': 'guy@gmail.com', 'time': 'Joined 40 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k7', 'inEvent': false},
-    {'name': 'Brooklyn Simmons', 'email': 'brooklyn@gmail.com', 'time': 'Joined 58 minutes ago.', 'avatar': 'https://i.pravatar.cc/150?u=k8', 'inEvent': false},
-  ];
+  final _guestRepo = GuestRepository();
+  List<Map<String, dynamic>> _guests = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGuests();
+  }
+
+  Future<void> _loadGuests() async {
+    try {
+      final guests = await _guestRepo.list(widget.eventId);
+      if (mounted) setState(() { _guests = guests; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredGuests {
     List<Map<String, dynamic>> list = _guests;
     if (_selectedIndex == 1) {
-      list = list.where((g) => g['inEvent'] == true).toList();
+      list = list.where((g) => g['status'] == 'checked_in').toList();
     }
     if (_searchQuery.isNotEmpty) {
-      list = list.where((g) => (g['name'] as String).toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+      list = list.where((g) {
+        final user = g['user'] as Map<String, dynamic>?;
+        final name = (user?['fullName'] ?? '') as String;
+        return name.toLowerCase().contains(_searchQuery.toLowerCase());
+      }).toList();
     }
     return list;
   }
@@ -114,23 +128,48 @@ class _GuestsScreenState extends State<GuestsScreen> {
 
           // Guest List
           Expanded(
-            child: ListView.builder(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: guests.length,
               itemBuilder: (context, index) {
                 final guest = guests[index];
+                final user = guest['user'] as Map<String, dynamic>? ?? {};
+                final name = user['fullName'] ?? 'Unknown';
+                final email = user['email'] ?? '';
+                final avatar = user['avatarUrl'] ?? '';
+                final inEvent = guest['status'] == 'checked_in';
+
+                String joinTime = '';
+                if (guest['joinedAt'] != null) {
+                  final dt = DateTime.tryParse(guest['joinedAt']);
+                  if (dt != null) {
+                    final diff = DateTime.now().difference(dt);
+                    if (diff.inMinutes < 1) {
+                      joinTime = 'Joined just now';
+                    } else if (diff.inHours < 1) {
+                      joinTime = 'Joined ${diff.inMinutes} minutes ago.';
+                    } else {
+                      joinTime = 'Joined ${diff.inHours} hours ago.';
+                    }
+                  }
+                }
+
                 return GuestCard(
-                  name: guest['name'],
-                  time: guest['time'],
-                  avatarUrl: guest['avatar'],
-                  inEvent: guest['inEvent'],
+                  name: name,
+                  time: joinTime,
+                  avatarUrl: avatar,
+                  inEvent: inEvent,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => GuestProfileScreen(
-                        name: guest['name'],
-                        email: guest['email'],
-                        imageUrl: guest['avatar'],
+                        eventId: widget.eventId,
+                        guestId: guest['id'] ?? '',
+                        name: name,
+                        email: email,
+                        imageUrl: avatar,
                       ),
                     ),
                   ),

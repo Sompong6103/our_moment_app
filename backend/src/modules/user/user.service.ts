@@ -23,9 +23,13 @@ export const userService = {
   },
 
   async updateProfile(userId: string, data: { fullName?: string; phoneNumber?: string; gender?: 'male' | 'female' | 'other' }) {
+    const updateData: any = { ...data };
+    if (updateData.gender) {
+      updateData.gender = updateData.gender.toLowerCase();
+    }
     return prisma.user.update({
       where: { id: userId },
-      data,
+      data: updateData,
       select: {
         id: true,
         fullName: true,

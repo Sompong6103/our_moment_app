@@ -47,7 +47,14 @@ class _CoverImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        if (event.coverImage != null)
+        if (event.coverImageUrl != null)
+          Image.network(
+            event.coverImageUrl!,
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          )
+        else if (event.coverImage != null)
           Image.asset(
             event.coverImage!,
             height: 180,
@@ -84,6 +91,8 @@ class _CoverImage extends StatelessWidget {
               children: [
                 Text(
                   event.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -118,14 +127,19 @@ class _OrganizerRow extends StatelessWidget {
           CircleAvatar(
             radius: 14,
             backgroundColor: Colors.grey[300],
-            child: const Icon(Icons.person, size: 16, color: Colors.white),
+            backgroundImage: event.organizerAvatarUrl != null ? NetworkImage(event.organizerAvatarUrl!) : null,
+            child: event.organizerAvatarUrl == null ? const Icon(Icons.person, size: 16, color: Colors.white) : null,
           ),
           const SizedBox(width: 8),
-          Text(
-            'by ${event.organizer}',
-            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+          Expanded(
+            child: Text(
+              'by ${event.organizer}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           AttendeeAvatars(count: event.attendeeCount),
         ],
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../data/repositories/guest_repository.dart';
 import '../../domain/models/event_model.dart';
 
 class GuestDetailsPage extends StatefulWidget {
@@ -15,7 +17,9 @@ class GuestDetailsPage extends StatefulWidget {
 class _GuestDetailsPageState extends State<GuestDetailsPage> {
   final _allergyController = TextEditingController();
   final _wishController = TextEditingController();
+  final _guestRepo = GuestRepository();
   int _followers = 1;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -24,16 +28,36 @@ class _GuestDetailsPageState extends State<GuestDetailsPage> {
     super.dispose();
   }
 
-  void _confirm() {
-    // TODO: save guest details to backend
-    // Pop back to home
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Joined ${widget.event.title} successfully!'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+  Future<void> _confirm() async {
+    if (_saving) return;
+    final eventId = widget.event.id;
+
+    setState(() => _saving = true);
+    try {
+      await _guestRepo.join(
+        eventId,
+        allergies: _allergyController.text.trim(),
+        wish: _wishController.text.trim(),
+        followersCount: _followers,
+      );
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Joined ${widget.event.title} successfully!'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override

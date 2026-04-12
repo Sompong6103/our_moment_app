@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../pages/wish_wall_screen.dart';
+import '../../domain/models/event_model.dart';
 import '../pages/event_map_page.dart';
 import '../pages/agenda_screen.dart';
 import '../pages/live_gallery.dart';
 
 class EventFeatureGrid extends StatelessWidget {
   final bool isHost;
-  const EventFeatureGrid({super.key, this.isHost = false});
+  final String eventId;
+  final EventModel? event;
+  const EventFeatureGrid({super.key, this.isHost = false, required this.eventId, this.event});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +29,7 @@ class EventFeatureGrid extends StatelessWidget {
                   // Navigate to Agenda Screen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AgendaScreen()),
+                    MaterialPageRoute(builder: (context) => AgendaScreen(eventId: eventId)),
                   );
                 },
               ),
@@ -44,7 +47,7 @@ class EventFeatureGrid extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => LiveGalleryScreen(isHost: isHost),
+                      builder: (context) => LiveGalleryScreen(isHost: isHost, eventId: eventId),
                     ),
                   );
                 },
@@ -66,7 +69,7 @@ class EventFeatureGrid extends StatelessWidget {
                   //Navigate to Wish Wall Screen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const WishWallScreen()),
+                    MaterialPageRoute(builder: (context) => WishWallScreen(eventId: eventId)),
                   );
                 },
               ),
@@ -83,7 +86,11 @@ class EventFeatureGrid extends StatelessWidget {
                   // Navigate to Event Map Screen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const EventMapScreen()),
+                    MaterialPageRoute(builder: (context) => EventMapScreen(
+                      locationName: event?.location,
+                      latitude: event?.latitude,
+                      longitude: event?.longitude,
+                    )),
                   );
                 },
               ),

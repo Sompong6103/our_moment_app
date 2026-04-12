@@ -4,8 +4,9 @@ import '../../../../core/widgets/app_avatar.dart';
 
 class HomeHeader extends StatelessWidget {
   final String name;
+  final String? avatarUrl;
 
-  const HomeHeader({super.key, required this.name});
+  const HomeHeader({super.key, required this.name, this.avatarUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,8 @@ class HomeHeader extends StatelessWidget {
               ],
             ),
           ),
-          const AppAvatar(
+          AppAvatar(
+            imageUrl: avatarUrl,
             size: 48,
             fallbackBackgroundColor: AppColors.border,
             fallbackIconColor: AppColors.white,

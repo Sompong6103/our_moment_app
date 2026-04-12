@@ -47,6 +47,14 @@ class ApiClient {
     return _request('GET', path, queryParams: queryParams, auth: auth);
   }
 
+  Future<List<dynamic>> getList(
+    String path, {
+    Map<String, String>? queryParams,
+    bool auth = false,
+  }) async {
+    return _requestList('GET', path, queryParams: queryParams, auth: auth);
+  }
+
   Future<Map<String, dynamic>> patch(
     String path, {
     Map<String, dynamic>? body,
@@ -60,6 +68,47 @@ class ApiClient {
     bool auth = false,
   }) async {
     return _request('DELETE', path, auth: auth);
+  }
+
+  Future<Map<String, dynamic>> uploadFile(
+    String path, {
+    required String filePath,
+    required String fieldName,
+    Map<String, String>? fields,
+    bool auth = true,
+  }) async {
+    String? token;
+    if (auth) {
+      token = await _tokenStorage.getAccessToken();
+    }
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}$path');
+    final request = http.MultipartRequest('POST', uri);
+    if (token != null) {
+      request.headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
+    }
+    request.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
+    if (fields != null) request.fields.addAll(fields);
+
+    try {
+      final streamedResponse = await request.send().timeout(ApiConfig.receiveTimeout);
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 401 && auth) {
+        final refreshed = await _tryRefreshToken();
+        if (refreshed) {
+          return uploadFile(path, filePath: filePath, fieldName: fieldName, fields: fields, auth: auth);
+        }
+      }
+
+      if (response.statusCode >= 400) {
+        throw ApiException(response.statusCode, data['error'] ?? 'Upload failed');
+      }
+      return data;
+    } on SocketException {
+      throw ApiException(0, 'Cannot connect to server');
+    }
   }
 
   Future<Map<String, dynamic>> _request(
@@ -124,6 +173,51 @@ class ApiClient {
     }
 
     return data;
+  }
+
+  Future<List<dynamic>> _requestList(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParams,
+    bool auth = false,
+  }) async {
+    String? token;
+    if (auth) {
+      token = await _tokenStorage.getAccessToken();
+    }
+
+    var uri = Uri.parse('${ApiConfig.baseUrl}$path');
+    if (queryParams != null) {
+      uri = uri.replace(queryParameters: queryParams);
+    }
+
+    http.Response response;
+    try {
+      response = await _client
+          .get(uri, headers: _headers(auth: auth, token: token))
+          .timeout(ApiConfig.connectTimeout);
+    } on SocketException {
+      throw ApiException(0, 'Cannot connect to server');
+    } on HttpException {
+      throw ApiException(0, 'Connection error');
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (response.statusCode == 401 && auth) {
+      final refreshed = await _tryRefreshToken();
+      if (refreshed) {
+        return _requestList(method, path, body: body, queryParams: queryParams, auth: auth);
+      }
+    }
+
+    if (response.statusCode >= 400) {
+      final msg = decoded is Map ? decoded['error'] ?? 'Something went wrong' : 'Something went wrong';
+      throw ApiException(response.statusCode, msg);
+    }
+
+    return decoded is List ? decoded : [];
   }
 
   Future<bool> _tryRefreshToken() async {

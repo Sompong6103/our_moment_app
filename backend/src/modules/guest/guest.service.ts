@@ -80,13 +80,18 @@ export const guestService = {
     });
     if (!guest) throw new Error('Guest not found');
 
-    // Get photo count and wish
-    const [photoCount, wish] = await Promise.all([
+    // Get photo count, photos, and wish
+    const [photoCount, photos, wish] = await Promise.all([
       prisma.photo.count({ where: { eventId, uploaderId: guestUserId, deletedAt: null } }),
+      prisma.photo.findMany({
+        where: { eventId, uploaderId: guestUserId, deletedAt: null },
+        select: { id: true, imageUrl: true, uploadedAt: true },
+        orderBy: { uploadedAt: 'desc' },
+      }),
       prisma.wish.findUnique({ where: { eventId_userId: { eventId, userId: guestUserId } } }),
     ]);
 
-    return { ...guest, photoCount, wish };
+    return { ...guest, photoCount, photos, wish };
   },
 
   async updateGuest(eventId: string, guestUserId: string, data: { allergies?: string; followersCount?: number }) {

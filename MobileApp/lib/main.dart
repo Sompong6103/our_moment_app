@@ -21,7 +21,6 @@ class OurMomentApp extends StatelessWidget {
       theme: AppTheme.light,
       home: const _AuthGate(),
       routes: {
-        AppRoutes.welcome: (_) => const WelcomePage(),
         AppRoutes.login: (_) => const LoginPage(),
         AppRoutes.createAccount: (_) => const CreateAccountPage(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
@@ -52,7 +51,10 @@ class _AuthGateState extends State<_AuthGate> {
     if (hasTokens) {
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.welcome);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const WelcomePage()),
+      );
     }
   }
 

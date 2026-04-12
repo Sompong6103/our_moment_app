@@ -1,30 +1,93 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../data/repositories/event_repository.dart';
 import '../../domain/models/event_model.dart';
 
-class AnalyticsPage extends StatelessWidget {
+class AnalyticsPage extends StatefulWidget {
   final EventModel event;
   const AnalyticsPage({super.key, required this.event});
 
   @override
+  State<AnalyticsPage> createState() => _AnalyticsPageState();
+}
+
+class _AnalyticsPageState extends State<AnalyticsPage> {
+  final _eventRepo = EventRepository();
+  bool _loading = true;
+  int _registeredCount = 0;
+  int _checkedInCount = 0;
+  int _photoCount = 0;
+  int _wishCount = 0;
+  List<Map<String, dynamic>> _topContributors = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final eventId = widget.event.id;
+      final results = await Future.wait([
+        _eventRepo.getAnalytics(eventId),
+        _eventRepo.getTopContributors(eventId),
+      ]);
+
+      final overview = results[0] as Map<String, dynamic>;
+      final contributors = results[1] as List<Map<String, dynamic>>;
+
+      if (mounted) {
+        setState(() {
+          _registeredCount = overview['registeredCount'] ?? 0;
+          _checkedInCount = overview['checkedInCount'] ?? 0;
+          _photoCount = overview['photoCount'] ?? 0;
+          _wishCount = overview['wishCount'] ?? 0;
+
+          _topContributors = contributors;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _formatCount(int count) {
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(count % 1000 == 0 ? 0 : 1)}k';
+    }
+    return count.toString();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final checkedInPct = _registeredCount > 0
+        ? '${(_checkedInCount * 100 / _registeredCount).round()}%'
+        : '0%';
+    final photosPerGuest = _registeredCount > 0
+        ? (_photoCount / _registeredCount).toStringAsFixed(1)
+        : '0';
+
     return AppDetailScaffold(
       title: 'Analytics',
-      child: SingleChildScrollView(
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Overview Cards ──
+            // Overview Cards
             Row(
               children: [
                 Expanded(
                   child: _OverviewCard(
                     icon: Icons.people_outline,
-                    value: '2,831',
+                    value: _formatCount(_registeredCount),
                     label: 'Registered',
-                    trend: '+12%',
+                    trend: '',
                     trendUp: true,
                     color: const Color(0xFF4CAF50),
                   ),
@@ -33,9 +96,9 @@ class AnalyticsPage extends StatelessWidget {
                 Expanded(
                   child: _OverviewCard(
                     icon: Icons.login_rounded,
-                    value: '1,821',
+                    value: _formatCount(_checkedInCount),
                     label: 'Checked In',
-                    trend: '64%',
+                    trend: checkedInPct,
                     trendUp: true,
                     color: const Color(0xFF2196F3),
                   ),
@@ -48,9 +111,9 @@ class AnalyticsPage extends StatelessWidget {
                 Expanded(
                   child: _OverviewCard(
                     icon: Icons.photo_library_outlined,
-                    value: '582',
+                    value: _formatCount(_photoCount),
                     label: 'Photos',
-                    trend: '+48',
+                    trend: '',
                     trendUp: true,
                     color: const Color(0xFFFF9800),
                   ),
@@ -59,9 +122,9 @@ class AnalyticsPage extends StatelessWidget {
                 Expanded(
                   child: _OverviewCard(
                     icon: Icons.favorite_border,
-                    value: '781',
+                    value: _formatCount(_wishCount),
                     label: 'Wishes',
-                    trend: '+23',
+                    trend: '',
                     trendUp: true,
                     color: const Color(0xFFE91E63),
                   ),
@@ -70,64 +133,41 @@ class AnalyticsPage extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
-            // ── Check-in Chart ──
-            const Text('Check-in Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 4),
-            Text('Guests checked in over time', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-            const SizedBox(height: 16),
-            _BarChart(),
-            const SizedBox(height: 28),
-
-            // ── Engagement Stats ──
+            // Engagement Stats
             const Text('Engagement', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
             const SizedBox(height: 14),
             _EngagementTile(
               icon: Icons.camera_alt_outlined,
               title: 'Photos per guest',
-              value: '3.2',
+              value: photosPerGuest,
               color: const Color(0xFFFF9800),
-            ),
-            _EngagementTile(
-              icon: Icons.chat_bubble_outline,
-              title: 'Avg. wish length',
-              value: '24 words',
-              color: const Color(0xFF9C27B0),
-            ),
-            _EngagementTile(
-              icon: Icons.access_time,
-              title: 'Avg. time in event',
-              value: '2h 15m',
-              color: const Color(0xFF2196F3),
-            ),
-            _EngagementTile(
-              icon: Icons.trending_up,
-              title: 'Peak check-in',
-              value: '18:00 - 18:30',
-              color: const Color(0xFF4CAF50),
             ),
             const SizedBox(height: 28),
 
-            // ── Top Contributors ──
-            const Text('Top Contributors', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 14),
-            ...List.generate(3, (i) {
-              final names = ['Krittanai N.', 'Cheewanon S.', 'Somchai P.'];
-              final photos = [24, 18, 12];
-              return _ContributorTile(
-                rank: i + 1,
-                name: names[i],
-                photoCount: photos[i],
-                avatarUrl: 'https://i.pravatar.cc/150?u=top$i',
-              );
-            }),
+            // Top Contributors
+            if (_topContributors.isNotEmpty) ...[
+              const Text('Top Contributors', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              const SizedBox(height: 14),
+              ...List.generate(_topContributors.length.clamp(0, 10), (i) {
+                final c = _topContributors[i];
+                final user = c['user'] as Map<String, dynamic>? ?? {};
+                return _ContributorTile(
+                  rank: i + 1,
+                  name: user['fullName'] ?? 'Unknown',
+                  photoCount: c['photoCount'] ?? 0,
+                  avatarUrl: user['avatarUrl'] ?? '',
+                );
+              }),
+            ],
           ],
         ),
       ),
     );
   }
+
 }
 
-// ── Overview Card ──
+// Overview Card
 class _OverviewCard extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -169,32 +209,33 @@ class _OverviewCard extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 20, color: color),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: trendUp ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      trendUp ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 10,
-                      color: trendUp ? const Color(0xFF4CAF50) : AppColors.danger,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      trend,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+              if (trend.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: trendUp ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        trendUp ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 10,
                         color: trendUp ? const Color(0xFF4CAF50) : AppColors.danger,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 2),
+                      Text(
+                        trend,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: trendUp ? const Color(0xFF4CAF50) : AppColors.danger,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -207,78 +248,7 @@ class _OverviewCard extends StatelessWidget {
   }
 }
 
-// ── Simple Bar Chart ──
-class _BarChart extends StatelessWidget {
-  final List<double> _data = const [0.3, 0.5, 0.85, 1.0, 0.7, 0.45, 0.2];
-  final List<String> _labels = const ['16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
-
-  const _BarChart();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 140,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(_data.length, (i) {
-                final isMax = _data[i] == 1.0;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (isMax)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                              '${(_data[i] * 680).toInt()}',
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primary),
-                            ),
-                          ),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          height: _data[i] * 110,
-                          decoration: BoxDecoration(
-                            color: isMax ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: List.generate(_labels.length, (i) {
-              return Expanded(
-                child: Text(
-                  _labels[i],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 9, color: AppColors.textSecondary),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Engagement Tile ──
+// Engagement Tile
 class _EngagementTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -326,7 +296,7 @@ class _EngagementTile extends StatelessWidget {
   }
 }
 
-// ── Contributor Tile ──
+// Contributor Tile
 class _ContributorTile extends StatelessWidget {
   final int rank;
   final String name;
@@ -343,7 +313,8 @@ class _ContributorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rankColors = [const Color(0xFFFFD700), const Color(0xFFC0C0C0), const Color(0xFFCD7F32)];
-    
+    final rankColor = rank <= 3 ? rankColors[rank - 1] : AppColors.textSecondary;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Container(
@@ -359,18 +330,18 @@ class _ContributorTile extends StatelessWidget {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: rankColors[rank - 1].withValues(alpha: 0.2),
+                color: rankColor.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Text(
                   '#$rank',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: rankColors[rank - 1]),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: rankColor),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            CircleAvatar(radius: 18, backgroundImage: NetworkImage(avatarUrl)),
+            CircleAvatar(radius: 18, backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null),
             const SizedBox(width: 12),
             Expanded(
               child: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),

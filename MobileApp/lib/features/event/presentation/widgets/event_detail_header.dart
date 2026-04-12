@@ -15,7 +15,14 @@ class EventDetailHeader extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: event.coverImage != null
+          child: event.coverImageUrl != null
+              ? Image.network(
+                  event.coverImageUrl!,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                )
+              : event.coverImage != null
               ? Image.asset(
                   event.coverImage!,
                   height: 200,

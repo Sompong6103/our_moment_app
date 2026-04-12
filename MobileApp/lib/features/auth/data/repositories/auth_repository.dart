@@ -7,6 +7,7 @@ import '../models/user_model.dart';
 class AuthRepository {
   final _api = ApiClient();
   final _tokenStorage = TokenStorage();
+  static bool _googleInitialized = false;
 
   Future<UserModel> login({
     required String email,
@@ -20,6 +21,7 @@ class AuthRepository {
     await _tokenStorage.saveTokens(
       accessToken: data['accessToken'],
       refreshToken: data['refreshToken'],
+      userId: data['user']?['id'],
     );
 
     return UserModel.fromJson(data['user']);
@@ -41,6 +43,7 @@ class AuthRepository {
     await _tokenStorage.saveTokens(
       accessToken: data['accessToken'],
       refreshToken: data['refreshToken'],
+      userId: data['user']?['id'],
     );
 
     return UserModel.fromJson(data['user']);
@@ -48,7 +51,13 @@ class AuthRepository {
 
   Future<UserModel> googleSignIn() async {
     final gsi = GoogleSignIn.instance;
-    await gsi.initialize();
+    if (!_googleInitialized) {
+      await gsi.initialize(
+        clientId: '959978755059-ms5k2ebjgcvk5dib9t8v7r6au4c3aghv.apps.googleusercontent.com',
+        serverClientId: '959978755059-7qanfth6claj62p97ml1n90og40e057k.apps.googleusercontent.com',
+      );
+      _googleInitialized = true;
+    }
 
     final account = await gsi.authenticate();
     final idToken = account.authentication.idToken;
@@ -61,6 +70,7 @@ class AuthRepository {
     await _tokenStorage.saveTokens(
       accessToken: data['accessToken'],
       refreshToken: data['refreshToken'],
+      userId: data['user']?['id'],
     );
 
     return UserModel.fromJson(data['user']);

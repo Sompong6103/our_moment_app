@@ -1,21 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_primary_button.dart';
-import '../../data/sample_events.dart';
-import '../../domain/models/event_model.dart';
+import '../../data/repositories/event_repository.dart';
 import 'event_detail_page.dart';
 import 'scan_qr_page.dart';
-
-// Mock: map join codes to events
-const _eventCodes = <String, int>{
-  'WED24': 1,
-};
-
-EventModel? _findEventByCode(String code) {
-  final index = _eventCodes[code.toUpperCase().trim()];
-  if (index != null && index < sampleEvents.length) return sampleEvents[index];
-  return null;
-}
 
 class JoinEventPage extends StatefulWidget {
   const JoinEventPage({super.key});
@@ -26,7 +15,9 @@ class JoinEventPage extends StatefulWidget {
 
 class _JoinEventPageState extends State<JoinEventPage> {
   final _codeController = TextEditingController();
+  final _eventRepo = EventRepository();
   String? _errorText;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -34,29 +25,38 @@ class _JoinEventPageState extends State<JoinEventPage> {
     super.dispose();
   }
 
-  void _joinWithCode() {
+  Future<void> _joinWithCode() async {
     final code = _codeController.text.trim();
     if (code.isEmpty) {
       setState(() => _errorText = 'Please enter an event code');
       return;
     }
-    final event = _findEventByCode(code);
-    if (event == null) {
-      setState(() => _errorText = 'Invalid code. Please try again.');
-      return;
+
+    setState(() { _errorText = null; _loading = true; });
+    try {
+      final event = await _eventRepo.getByCode(code);
+      if (mounted) {
+        setState(() => _loading = false);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EventDetailPage(event: event, showJoinButton: true),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() { _errorText = e.message; _loading = false; });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() { _errorText = 'Invalid code. Please try again.'; _loading = false; });
+      }
     }
-    setState(() => _errorText = null);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EventDetailPage(event: event, showJoinButton: true),
-      ),
-    );
   }
 
   Future<void> _handleQrResult(String? qrValue) async {
     if (qrValue == null) return;
-    // Parse QR: ourmoment://join?code=WED24&event=...
     String? code;
     if (qrValue.contains('code=')) {
       final uri = Uri.tryParse(qrValue);
@@ -66,18 +66,22 @@ class _JoinEventPageState extends State<JoinEventPage> {
     }
     if (code == null) return;
 
-    final event = _findEventByCode(code);
-    if (event != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EventDetailPage(event: event, showJoinButton: true),
-        ),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid QR Code'), backgroundColor: Colors.red),
-      );
+    try {
+      final event = await _eventRepo.getByCode(code);
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EventDetailPage(event: event, showJoinButton: true),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid QR Code'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -175,8 +179,8 @@ class _JoinEventPageState extends State<JoinEventPage> {
                   const SizedBox(height: 20),
 
                   AppPrimaryButton(
-                    label: 'Join Event',
-                    onPressed: _joinWithCode,
+                    label: _loading ? 'Searching...' : 'Join Event',
+                    onPressed: _loading ? null : _joinWithCode,
                   ),
                   const SizedBox(height: 28),
 

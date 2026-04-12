@@ -105,6 +105,7 @@ export const eventService = {
       prisma.event.findMany({
         where: { organizerId: userId, deletedAt: null },
         include: {
+          organizer: { select: { id: true, fullName: true, avatarUrl: true } },
           _count: { select: { guests: true } },
           location: true,
         },
@@ -138,14 +139,41 @@ export const eventService = {
     themeName?: string;
     expectedAttendeeCount?: number;
     acceptPhotos?: boolean;
+    location?: { latitude: number; longitude: number; address?: string; placeId?: string };
   }) {
-    return prisma.event.update({
+    const { location, ...eventData } = data;
+
+    const event = await prisma.event.update({
       where: { id: eventId },
       data: {
-        ...data,
-        dateStart: data.dateStart ? new Date(data.dateStart) : undefined,
-        dateEnd: data.dateEnd ? new Date(data.dateEnd) : undefined,
+        ...eventData,
+        dateStart: eventData.dateStart ? new Date(eventData.dateStart) : undefined,
+        dateEnd: eventData.dateEnd ? new Date(eventData.dateEnd) : undefined,
       },
+      include: { location: true },
+    });
+
+    if (location) {
+      await prisma.location.upsert({
+        where: { eventId },
+        create: {
+          eventId,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          address: location.address,
+          placeId: location.placeId,
+        },
+        update: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          address: location.address,
+          placeId: location.placeId,
+        },
+      });
+    }
+
+    return prisma.event.findUnique({
+      where: { id: eventId },
       include: { location: true },
     });
   },

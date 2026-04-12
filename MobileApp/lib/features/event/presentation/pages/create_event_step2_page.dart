@@ -1,9 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_primary_button.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../data/repositories/event_repository.dart';
 import '../../domain/models/agenda_item.dart';
 import '../widgets/agenda_timeline.dart';
 import 'location_picker_page.dart';
@@ -16,6 +18,7 @@ class CreateEventStep2Page extends StatefulWidget {
   final String? themeName;
   final Color? themeColor;
   final bool acceptPhotos;
+  final String? bannerImagePath;
 
   const CreateEventStep2Page({
     super.key,
@@ -26,6 +29,7 @@ class CreateEventStep2Page extends StatefulWidget {
     this.themeName,
     this.themeColor,
     required this.acceptPhotos,
+    this.bannerImagePath,
   });
 
   @override
@@ -35,42 +39,44 @@ class CreateEventStep2Page extends StatefulWidget {
 
 class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
   SelectedLocation? _selectedLocation;
+  bool _saving = false;
+  final _eventRepo = EventRepository();
 
-  final List<AgendaItem> _agendaItems = [
-    const AgendaItem(
-      dateTime: 'Sat, 25 Oct 2025 | 18:00',
-      title: 'Buddhist ceremony',
-      description: 'Offering food to nine monks.',
-      location: 'Rao Grand 2',
-    ),
-    const AgendaItem(
-      dateTime: 'Sat, 25 Oct 2025 | 18:00',
-      title: 'Buddhist ceremony',
-      description: 'Offering food to nine monks.',
-      location: 'Rao Grand 2',
-    ),
-    const AgendaItem(
-      dateTime: 'Sat, 25 Oct 2025 | 18:00',
-      title: 'Buddhist ceremony',
-      description: 'Offering food to nine monks.',
-      location: 'Rao Grand 2',
-    ),
-    const AgendaItem(
-      dateTime: 'Sat, 25 Oct 2025 | 18:00',
-      title: 'Buddhist ceremony',
-      description: 'Offering food to nine monks.',
-      location: 'Rao Grand 2',
-    ),
-  ];
+  final List<AgendaItem> _agendaItems = [];
 
   void _addAgendaItem() {
+    _showAgendaDialog();
+  }
+
+  void _editAgendaItem(int index) {
+    final item = _agendaItems[index];
+    _showAgendaDialog(
+      editIndex: index,
+      initialTitle: item.title,
+      initialDesc: item.description,
+      initialLocation: item.location,
+      initialDateTime: item.dateTime,
+    );
+  }
+
+  void _deleteAgendaItem(int index) {
+    setState(() => _agendaItems.removeAt(index));
+  }
+
+  void _showAgendaDialog({
+    int? editIndex,
+    String initialTitle = '',
+    String initialDesc = '',
+    String initialLocation = '',
+    String initialDateTime = '',
+  }) {
     showDialog(
       context: context,
       builder: (ctx) {
-        final titleCtrl = TextEditingController();
-        final descCtrl = TextEditingController();
-        final locationCtrl = TextEditingController();
-        final dateTimeCtrl = TextEditingController();
+        final titleCtrl = TextEditingController(text: initialTitle);
+        final descCtrl = TextEditingController(text: initialDesc);
+        final locationCtrl = TextEditingController(text: initialLocation);
+        final dateTimeCtrl = TextEditingController(text: initialDateTime);
 
         Future<void> pickDateTime() async {
           final date = await showDatePicker(
@@ -102,7 +108,7 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
         }
 
         return AlertDialog(
-          title: const Text('Add Agenda'),
+          title: Text(editIndex != null ? 'Edit Agenda' : 'Add Agenda'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -149,18 +155,23 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
             FilledButton(
               onPressed: () {
                 if (titleCtrl.text.isNotEmpty) {
+                  final newItem = AgendaItem(
+                    dateTime: dateTimeCtrl.text,
+                    title: titleCtrl.text,
+                    description: descCtrl.text,
+                    location: locationCtrl.text,
+                  );
                   setState(() {
-                    _agendaItems.add(AgendaItem(
-                      dateTime: dateTimeCtrl.text,
-                      title: titleCtrl.text,
-                      description: descCtrl.text,
-                      location: locationCtrl.text,
-                    ));
+                    if (editIndex != null) {
+                      _agendaItems[editIndex] = newItem;
+                    } else {
+                      _agendaItems.add(newItem);
+                    }
                   });
                 }
                 Navigator.pop(ctx);
               },
-              child: const Text('Add'),
+              child: Text(editIndex != null ? 'Save' : 'Add'),
             ),
           ],
         );
@@ -168,11 +179,92 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
     );
   }
 
-  void _confirm() {
-    // TODO: save event logic
-    Navigator.of(context)
-      ..pop() // step 2
-      ..pop(); // step 1 → back to home
+  static DateTime? _parseFormattedDate(String text) {
+    // Parse "Sat, 25 Oct 2025 | 18:00" to DateTime
+    const months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+      'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12};
+    final match = RegExp(r'(\d+)\s+(\w+)\s+(\d+)\s*\|\s*(\d+):(\d+)').firstMatch(text);
+    if (match == null) return null;
+    final day = int.tryParse(match.group(1)!) ?? 1;
+    final month = months[match.group(2)] ?? 1;
+    final year = int.tryParse(match.group(3)!) ?? 2025;
+    final hour = int.tryParse(match.group(4)!) ?? 0;
+    final minute = int.tryParse(match.group(5)!) ?? 0;
+    return DateTime(year, month, day, hour, minute);
+  }
+
+  Future<void> _confirm() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+
+    try {
+      final dateStart = _parseFormattedDate(widget.dateStart);
+      final dateEnd = _parseFormattedDate(widget.dateEnd);
+
+      final dateStartStr = dateStart != null ? '${dateStart.toIso8601String()}Z' : '';
+      final dateEndStr = dateEnd != null ? '${dateEnd.toIso8601String()}Z' : '';
+
+      String? themeColorHex;
+      if (widget.themeColor != null) {
+        themeColorHex = '#${widget.themeColor!.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+      }
+
+      Map<String, dynamic>? location;
+      if (_selectedLocation != null) {
+        location = {
+          'address': _selectedLocation!.displayName,
+          'latitude': _selectedLocation!.latLng.latitude,
+          'longitude': _selectedLocation!.latLng.longitude,
+        };
+      }
+
+      final event = await _eventRepo.create(
+        title: widget.eventName,
+        type: 'ceremony',
+        description: widget.detail.isNotEmpty ? widget.detail : null,
+        dateStart: dateStartStr,
+        dateEnd: dateEndStr,
+        themeName: widget.themeName,
+        themeColor: themeColorHex,
+        acceptPhotos: widget.acceptPhotos,
+        location: location,
+      );
+
+      // Upload banner if selected
+      if (widget.bannerImagePath != null) {
+        await _eventRepo.uploadCover(event.id, widget.bannerImagePath!);
+      }
+
+      // Create agenda items
+      {
+        for (int i = 0; i < _agendaItems.length; i++) {
+          final item = _agendaItems[i];
+          final agendaTime = _parseFormattedDate(item.dateTime);
+          await _eventRepo.createAgendaItem(
+            event.id,
+            title: item.title,
+            description: item.description.isNotEmpty ? item.description : null,
+            location: item.location.isNotEmpty ? item.location : null,
+            startTime: agendaTime != null ? '${agendaTime.toIso8601String()}Z' : '',
+            sortOrder: i,
+          );
+        }
+      }
+
+      if (mounted) {
+        Navigator.of(context)
+          ..pop() // step 2
+          ..pop(); // step 1 → back to home
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -322,7 +414,23 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
                   ),
                   const SizedBox(height: 16),
 
-                  AgendaTimeline(items: _agendaItems),
+                  AgendaTimeline(
+                    items: _agendaItems,
+                    trailingBuilder: (context, index) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _editAgendaItem(index),
+                          child: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () => _deleteAgendaItem(index),
+                          child: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -331,8 +439,8 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
             child: AppPrimaryButton(
-              label: 'Confirm',
-              onPressed: _confirm,
+              label: _saving ? 'Creating...' : 'Confirm',
+              onPressed: _saving ? null : _confirm,
             ),
           ),
         ],

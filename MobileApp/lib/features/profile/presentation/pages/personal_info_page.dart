@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_primary_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../data/repositories/profile_repository.dart';
 import '../../domain/models/profile_model.dart';
 
 class PersonalInfoPage extends StatefulWidget {
@@ -20,6 +22,9 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
   late String _selectedGender;
+  bool _saving = false;
+
+  final _profileRepo = ProfileRepository();
 
   @override
   void initState() {
@@ -27,7 +32,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     _fullNameController = TextEditingController(text: widget.profile.fullName);
     _emailController = TextEditingController(text: widget.profile.email);
     _phoneController = TextEditingController(text: widget.profile.phoneNumber);
-    _selectedGender = widget.profile.gender;
+    _selectedGender = widget.profile.gender.toLowerCase();
   }
 
   @override
@@ -36,6 +41,32 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _updateProfile() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _profileRepo.updateProfile(
+        fullName: _fullNameController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        gender: _selectedGender,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully.'), behavior: SnackBarBehavior.floating),
+        );
+        Navigator.pop(context);
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -105,9 +136,9 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                 ),
               ),
               items: const [
-                DropdownMenuItem(value: 'Male', child: Text('Male')),
-                DropdownMenuItem(value: 'Female', child: Text('Female')),
-                DropdownMenuItem(value: 'Other', child: Text('Other')),
+                DropdownMenuItem(value: 'male', child: Text('Male')),
+                DropdownMenuItem(value: 'female', child: Text('Female')),
+                DropdownMenuItem(value: 'other', child: Text('Other')),
               ],
               onChanged: (value) {
                 if (value == null) return;
@@ -116,15 +147,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
             ),
             const SizedBox(height: 22),
             AppPrimaryButton(
-              label: 'Update Info',
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile updated (mock).'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              label: _saving ? 'Updating...' : 'Update Info',
+              onPressed: _saving ? null : _updateProfile,
             ),
           ],
         ),

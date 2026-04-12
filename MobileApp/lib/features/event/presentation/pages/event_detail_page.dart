@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../data/repositories/guest_repository.dart';
 import '../../domain/models/event_model.dart';
 import '../widgets/event_detail_header.dart';
 import '../widgets/event_feature_grid.dart';
@@ -19,15 +21,27 @@ class EventDetailPage extends StatefulWidget {
 
 class _EventDetailPageState extends State<EventDetailPage> {
   bool _checkedIn = false;
+  final _guestRepo = GuestRepository();
 
-  void _handleCheckIn() {
-    setState(() => _checkedIn = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Checked in to ${widget.event.title} successfully!'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+  void _handleCheckIn() async {
+    try {
+      await _guestRepo.checkIn(widget.event.id);
+      if (mounted) {
+        setState(() => _checkedIn = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Checked in to ${widget.event.title} successfully!'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -75,7 +89,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   EventDetailHeader(event: event),
                   const SizedBox(height: 20),
 
-                  EventFeatureGrid(isHost: event.isHost),
+                  EventFeatureGrid(isHost: event.isHost, eventId: event.id, event: event),
                   const SizedBox(height: 24),
 
                   const Text(

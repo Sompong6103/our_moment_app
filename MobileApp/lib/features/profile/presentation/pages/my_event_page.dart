@@ -3,18 +3,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/segment_button.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
+import '../../../event/data/repositories/event_repository.dart';
 import '../../../event/domain/models/event_model.dart';
 import '../../../event/presentation/widgets/event_card.dart';
 
 class MyEventPage extends StatefulWidget {
-  final List<EventModel> hostedEvents;
-  final List<EventModel> pastEvents;
-
-  const MyEventPage({
-    super.key,
-    required this.hostedEvents,
-    required this.pastEvents,
-  });
+  const MyEventPage({super.key});
 
   @override
   State<MyEventPage> createState() => _MyEventPageState();
@@ -22,16 +16,44 @@ class MyEventPage extends StatefulWidget {
 
 class _MyEventPageState extends State<MyEventPage> {
   int _selectedTab = 0;
+  List<EventModel> _hostedEvents = [];
+  List<EventModel> _joinedEvents = [];
+  bool _loading = true;
+
+  final _eventRepo = EventRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    try {
+      final data = await _eventRepo.listMyEvents();
+      if (mounted) {
+        setState(() {
+          _hostedEvents = data['organized'] ?? [];
+          _joinedEvents = data['joined'] ?? [];
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   List<EventModel> get _visibleEvents {
-    return _selectedTab == 0 ? widget.hostedEvents : widget.pastEvents;
+    return _selectedTab == 0 ? _hostedEvents : _joinedEvents;
   }
 
   @override
   Widget build(BuildContext context) {
     return AppDetailScaffold(
       title: 'My Event',
-      child: Padding(
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
         child: Column(
           children: [
@@ -52,7 +74,7 @@ class _MyEventPageState extends State<MyEventPage> {
                   ),
                   Expanded(
                     child: SegmentButton(
-                      title: 'Past Event',
+                      title: 'Joined',
                       selected: _selectedTab == 1,
                       onTap: () => setState(() => _selectedTab = 1),
                     ),

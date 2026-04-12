@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_primary_button.dart';
@@ -46,8 +47,28 @@ class _CreateEventPageState extends State<CreateEventPage> {
       imageQuality: 85,
       requestFullMetadata: false,
     );
-    if (picked != null) {
-      setState(() => _bannerImage = File(picked.path));
+    if (picked == null) return;
+
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+      compressQuality: 85,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Banner',
+          toolbarColor: AppColors.primary,
+          toolbarWidgetColor: Colors.white,
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: 'Crop Banner',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
+    if (cropped != null) {
+      setState(() => _bannerImage = File(cropped.path));
     }
   }
 
@@ -307,6 +328,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           themeName: _themeName,
           themeColor: _themeColor,
           acceptPhotos: _acceptPhotos,
+          bannerImagePath: _bannerImage?.path,
         ),
       ),
     );
