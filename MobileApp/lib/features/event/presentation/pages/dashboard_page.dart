@@ -15,7 +15,7 @@ import '../../domain/models/event_model.dart';
 import 'analytics_page.dart';
 import 'guest_profile.dart';
 import 'guest_see_all.dart';
-import 'photo_management_page.dart';
+import 'live_gallery.dart';
 
 class DashboardPage extends StatefulWidget {
   final EventModel event;
@@ -340,9 +340,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 _MenuCard(
                   icon: Icons.photo_library_outlined,
                   title: 'Photos',
-                  subtitle: 'Review & manage',
+                  subtitle: 'Live gallery',
                   color: const Color(0xFFFF9800),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PhotoManagementPage())),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveGalleryScreen(isHost: true))),
                 ),
                 _MenuCard(
                   icon: Icons.qr_code_rounded,

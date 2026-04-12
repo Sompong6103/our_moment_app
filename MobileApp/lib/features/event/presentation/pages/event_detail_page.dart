@@ -7,14 +7,32 @@ import '../widgets/event_feature_grid.dart';
 import 'dashboard_page.dart';
 import 'guest_details_page.dart';
 
-class EventDetailPage extends StatelessWidget {
+class EventDetailPage extends StatefulWidget {
   final EventModel event;
   final bool showJoinButton;
 
   const EventDetailPage({super.key, required this.event, this.showJoinButton = false});
 
   @override
+  State<EventDetailPage> createState() => _EventDetailPageState();
+}
+
+class _EventDetailPageState extends State<EventDetailPage> {
+  bool _checkedIn = false;
+
+  void _handleCheckIn() {
+    setState(() => _checkedIn = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Checked in to ${widget.event.title} successfully!'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final event = widget.event;
     return AppDetailScaffold(
       title: 'Detail Event',
       actions: event.isHost
@@ -113,7 +131,8 @@ class EventDetailPage extends StatelessWidget {
               ),
             ),
           ),
-          if (showJoinButton)
+          // ── Join button (first time) ──
+          if (widget.showJoinButton)
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -133,7 +152,32 @@ class EventDetailPage extends StatelessWidget {
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     ),
-                    child: const Text('Join Event', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    child: const Text('Attend the event', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ),
+            ),
+          // ── Check-in button (joined guest on event day) ──
+          if (!widget.showJoinButton && event.canCheckIn)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: _checkedIn ? null : _handleCheckIn,
+                    icon: Icon(_checkedIn ? Icons.check_circle : Icons.login_rounded, size: 20),
+                    label: Text(
+                      _checkedIn ? 'Checked in' : 'Check in',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _checkedIn ? Colors.green : AppColors.primary,
+                      disabledBackgroundColor: Colors.green,
+                      disabledForegroundColor: AppColors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
                   ),
                 ),
               ),
