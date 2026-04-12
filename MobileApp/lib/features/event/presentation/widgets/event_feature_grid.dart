@@ -3,7 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../pages/wish_wall_screen.dart';
 import '../pages/event_map_page.dart';
 import '../pages/agenda_screen.dart';
-import '../pages/live_gallary.dart';
+import '../pages/live_gallery.dart';
 
 class EventFeatureGrid extends StatelessWidget {
   final bool isHost;

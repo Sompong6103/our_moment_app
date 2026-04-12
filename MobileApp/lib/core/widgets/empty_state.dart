@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class EmptyState extends StatelessWidget {
   final String title;
@@ -26,7 +27,7 @@ class EmptyState extends StatelessWidget {
               Icon(
                 Icons.sentiment_dissatisfied_rounded,
                 size: 150,
-                color: Colors.grey[400],
+                color: AppColors.iconInactive,
               ),
             const SizedBox(height: 20),
             Text(
@@ -38,7 +39,7 @@ class EmptyState extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           ],
         ),

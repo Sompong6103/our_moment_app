@@ -35,7 +35,7 @@ class AppTextField extends StatelessWidget {
     this.enabled = true,
     this.maxLines = 1,
     this.filled = true,
-    this.fillColor = Colors.white,
+    this.fillColor = AppColors.white,
     this.contentPadding = const EdgeInsets.symmetric(
       horizontal: 14,
       vertical: 14,

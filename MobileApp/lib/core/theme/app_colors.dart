@@ -24,6 +24,9 @@ class AppColors {
   // ── Border & Divider ──
   static const border = Color(0xFFE0E0E0);
 
+  // ── Avatar ──
+  static const avatarFallback = Color(0xFFE6E1FF);
+
   // ── Input ──
   static const inputHint = Color(0xFFACACAC);
 

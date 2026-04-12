@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -19,7 +20,7 @@ class HomeHeader extends StatelessWidget {
               children: [
                 Text(
                   'Welcome Back',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -34,8 +35,8 @@ class HomeHeader extends StatelessWidget {
           ),
           const AppAvatar(
             size: 48,
-            fallbackBackgroundColor: Color(0xFFE0E0E0),
-            fallbackIconColor: Colors.white,
+            fallbackBackgroundColor: AppColors.border,
+            fallbackIconColor: AppColors.white,
           ),
         ],
       ),

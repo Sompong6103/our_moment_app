@@ -14,7 +14,7 @@ class AppAvatar extends StatelessWidget {
     super.key,
     this.imageUrl,
     this.size = 64,
-    this.fallbackBackgroundColor = const Color(0xFFE6E1FF),
+    this.fallbackBackgroundColor = AppColors.avatarFallback,
     this.fallbackIconColor = AppColors.primary,
   });
 

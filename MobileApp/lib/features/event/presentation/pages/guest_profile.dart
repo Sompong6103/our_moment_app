@@ -162,7 +162,7 @@ class GuestProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Text(
               value,
