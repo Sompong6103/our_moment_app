@@ -32,4 +32,9 @@ export const env = {
   // App
   appUrl: process.env.APP_URL || 'http://localhost:3000',
   frontendUrl: process.env.FRONTEND_URL || 'ourmoment://',
+
+  // Face++ API
+  faceppApiKey: process.env.FACEPP_API_KEY || '',
+  faceppApiSecret: process.env.FACEPP_API_SECRET || '',
+  faceppBaseUrl: process.env.FACEPP_BASE_URL || 'https://api-us.faceplusplus.com',
 };

@@ -26,6 +26,10 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
   List<GalleryPhoto> _photos = [];
   bool _loading = true;
 
+  // Face search state
+  List<GalleryPhoto>? _faceSearchResults;
+  bool _faceSearching = false;
+
   @override
   void initState() {
     super.initState();
@@ -72,24 +76,198 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
     }
   }
 
+  Future<void> _searchByFace() async {
+    if (widget.eventId == null) return;
+
+    // Show bottom sheet to choose source
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Find My Photos',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Take a selfie or choose a photo of yourself',
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                title: const Text('Take a Selfie'),
+                subtitle: const Text('Use front camera'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: AppColors.primary),
+                title: const Text('Choose from Album'),
+                subtitle: const Text('Select an existing photo'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final image = await _picker.pickImage(
+      source: source,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 80,
+    );
+    if (image == null) return;
+
+    setState(() => _faceSearching = true);
+
+    try {
+      final results = await _photoRepo.searchByFace(widget.eventId!, image.path);
+      if (mounted) {
+        setState(() {
+          _faceSearchResults = results;
+          _faceSearching = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _faceSearching = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Face search failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _clearFaceSearch() {
+    setState(() => _faceSearchResults = null);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayPhotos = _faceSearchResults ?? _photos;
+    final showingFaceResults = _faceSearchResults != null;
+
     return AppDetailScaffold(
-      title: 'Live Gallery',
+      title: showingFaceResults ? 'My Photos' : 'Live Gallery',
       floatingActionButton: (widget.isMember && (widget.isHost || widget.acceptPhotos))
-          ? FloatingActionButton(
-              onPressed: _pickImage,
-              backgroundColor: AppColors.primary,
-              shape: const CircleBorder(),
-              child: const Icon(Icons.add, color: Colors.white, size: 30),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.isMember)
+                  FloatingActionButton(
+                    heroTag: 'face_search',
+                    onPressed: _faceSearching ? null : (showingFaceResults ? _clearFaceSearch : _searchByFace),
+                    backgroundColor: showingFaceResults ? Colors.grey : AppColors.primary,
+                    shape: const CircleBorder(),
+                    child: _faceSearching
+                        ? const SizedBox(
+                            width: 24, height: 24,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Icon(
+                            showingFaceResults ? Icons.close : Icons.face,
+                            color: Colors.white, size: 28,
+                          ),
+                  ),
+                const SizedBox(height: 12),
+                FloatingActionButton(
+                  heroTag: 'add_photo',
+                  onPressed: _pickImage,
+                  backgroundColor: AppColors.primary,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.add, color: Colors.white, size: 30),
+                ),
+              ],
             )
-          : null,
+          : (widget.isMember
+              ? FloatingActionButton(
+                  heroTag: 'face_search_only',
+                  onPressed: _faceSearching ? null : (showingFaceResults ? _clearFaceSearch : _searchByFace),
+                  backgroundColor: showingFaceResults ? Colors.grey : AppColors.primary,
+                  shape: const CircleBorder(),
+                  child: _faceSearching
+                      ? const SizedBox(
+                          width: 24, height: 24,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : Icon(
+                          showingFaceResults ? Icons.close : Icons.face,
+                          color: Colors.white, size: 28,
+                        ),
+                )
+              : null),
       child: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
+          if (showingFaceResults)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.face, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Found ${displayPhotos.length} photo${displayPhotos.length == 1 ? '' : 's'} of you',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _clearFaceSearch,
+                    child: const Text(
+                      'Show All',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
-            child: GridView.builder(
+            child: displayPhotos.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          showingFaceResults ? Icons.face_retouching_off : Icons.photo_library_outlined,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          showingFaceResults
+                              ? 'No photos of you found'
+                              : 'No photos yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : GridView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -97,9 +275,9 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
                 mainAxisSpacing: 15,
                 childAspectRatio: 1,
               ),
-              itemCount: _photos.length,
+              itemCount: displayPhotos.length,
               itemBuilder: (context, index) {
-                final photo = _photos[index];
+                final photo = displayPhotos[index];
 
                 return GestureDetector(
                   onTap: () async {

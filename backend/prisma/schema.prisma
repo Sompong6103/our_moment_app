@@ -174,8 +174,21 @@ model Photo {
 
   event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   uploader User  @relation("PhotoUploader", fields: [uploaderId], references: [id])
+  faces    PhotoFace[]
 
   @@map("photos")
+}
+
+// ─── Photo Faces (Face++ face_token per photo) ───
+model PhotoFace {
+  id        String @id @default(uuid())
+  photoId   String @map("photo_id")
+  faceToken String @map("face_token") @db.VarChar(255)
+
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@index([faceToken])
+  @@map("photo_faces")
 }
 
 // ─── Wishes ───

@@ -42,4 +42,20 @@ export const photoController = {
       res.status(400).json({ error: err.message });
     }
   },
+
+  async searchByFace(req: Request, res: Response) {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No selfie uploaded' });
+        return;
+      }
+      const results = await photoService.searchByFace(
+        req.params.eventId as string,
+        req.file.path,
+      );
+      res.json(results);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Face search failed' });
+    }
+  },
 };
