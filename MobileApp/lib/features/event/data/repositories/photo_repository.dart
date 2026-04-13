@@ -29,6 +29,10 @@ class PhotoRepository {
     await _api.delete('/events/$eventId/photos/$photoId', auth: true);
   }
 
+  Future<void> bulkDelete(String eventId, List<String> photoIds) async {
+    await _api.post('/events/$eventId/photos/bulk-delete', body: {'photoIds': photoIds}, auth: true);
+  }
+
   Future<List<GalleryPhoto>> searchByFace(String eventId, String selfiePath) async {
     final tokenStorage = TokenStorage();
     final token = await tokenStorage.getAccessToken();

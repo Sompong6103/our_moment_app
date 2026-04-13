@@ -10,6 +10,8 @@ class AppDetailScaffold extends StatelessWidget {
   final Widget child;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
+  final Widget? leading;
+  final Widget? bottomBar;
 
   const AppDetailScaffold({
     super.key,
@@ -17,6 +19,8 @@ class AppDetailScaffold extends StatelessWidget {
     required this.child,
     this.actions,
     this.floatingActionButton,
+    this.leading,
+    this.bottomBar,
   });
 
   @override
@@ -29,7 +33,7 @@ class AppDetailScaffold extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leadingWidth: 90,
-        leading: Padding(
+        leading: leading ?? Padding(
           padding: const EdgeInsets.only(
             left: 20,
             right: 20,
@@ -63,6 +67,7 @@ class AppDetailScaffold extends StatelessWidget {
         actions: actions,
       ),
       floatingActionButton: floatingActionButton,
+      bottomNavigationBar: bottomBar,
       body: child,
     );
   }

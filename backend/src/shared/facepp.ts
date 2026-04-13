@@ -11,29 +11,39 @@ function isConfigured(): boolean {
   return !!(API_KEY && API_SECRET);
 }
 
+// Queue to ensure only 1 Face++ API call at a time (free tier limit)
+let queue: Promise<any> = Promise.resolve();
+function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  const task = queue.then(() => fn(), () => fn());
+  queue = task.catch(() => {}); // prevent chain break
+  return task;
+}
+
 /**
  * Detect faces in an image file and return face_tokens
  */
 export async function detectFaces(imagePath: string): Promise<string[]> {
   if (!isConfigured()) return [];
 
-  try {
-    const form = new FormData();
-    form.append('api_key', API_KEY);
-    form.append('api_secret', API_SECRET);
-    form.append('image_file', fs.createReadStream(imagePath));
+  return enqueue(async () => {
+    try {
+      const form = new FormData();
+      form.append('api_key', API_KEY);
+      form.append('api_secret', API_SECRET);
+      form.append('image_file', fs.createReadStream(imagePath));
 
-    const res = await axios.post(`${BASE_URL}/facepp/v3/detect`, form, {
-      headers: form.getHeaders(),
-      timeout: 15000,
-    });
+      const res = await axios.post(`${BASE_URL}/facepp/v3/detect`, form, {
+        headers: form.getHeaders(),
+        timeout: 15000,
+      });
 
-    const faces: { face_token: string }[] = res.data.faces || [];
-    return faces.map((f) => f.face_token);
-  } catch (err: any) {
-    console.error('[Face++] detect error:', err.response?.data || err.message);
-    return [];
-  }
+      const faces: { face_token: string }[] = res.data.faces || [];
+      return faces.map((f) => f.face_token);
+    } catch (err: any) {
+      console.error('[Face++] detect error:', err.response?.data || err.message);
+      return [];
+    }
+  });
 }
 
 /**
@@ -45,23 +55,25 @@ export async function compareFaces(
 ): Promise<number> {
   if (!isConfigured()) return 0;
 
-  try {
-    const form = new FormData();
-    form.append('api_key', API_KEY);
-    form.append('api_secret', API_SECRET);
-    form.append('face_token1', faceToken1);
-    form.append('face_token2', faceToken2);
+  return enqueue(async () => {
+    try {
+      const form = new FormData();
+      form.append('api_key', API_KEY);
+      form.append('api_secret', API_SECRET);
+      form.append('face_token1', faceToken1);
+      form.append('face_token2', faceToken2);
 
-    const res = await axios.post(`${BASE_URL}/facepp/v3/compare`, form, {
-      headers: form.getHeaders(),
-      timeout: 10000,
-    });
+      const res = await axios.post(`${BASE_URL}/facepp/v3/compare`, form, {
+        headers: form.getHeaders(),
+        timeout: 10000,
+      });
 
-    return res.data.confidence || 0;
-  } catch (err: any) {
-    console.error('[Face++] compare error:', err.response?.data || err.message);
-    return 0;
-  }
+      return res.data.confidence || 0;
+    } catch (err: any) {
+      console.error('[Face++] compare error:', err.response?.data || err.message);
+      return 0;
+    }
+  });
 }
 
 /**
@@ -81,23 +93,16 @@ export async function searchFaceInEvent(
 
   const selfieToken = selfieTokens[0]; // Use the first (primary) face
 
-  // Compare against all event face tokens (batch with concurrency limit)
-  const CONCURRENCY = 5;
+  // Compare against all event face tokens sequentially (free tier: 1 QPS)
   const results: { photoId: string; confidence: number }[] = [];
 
-  for (let i = 0; i < eventFaceTokens.length; i += CONCURRENCY) {
-    const batch = eventFaceTokens.slice(i, i + CONCURRENCY);
-    const batchResults = await Promise.all(
-      batch.map(async ({ photoId, faceToken }) => {
-        const confidence = await compareFaces(selfieToken, faceToken);
-        return { photoId, confidence };
-      })
-    );
-    results.push(...batchResults);
+  for (const { photoId, faceToken } of eventFaceTokens) {
+    const confidence = await compareFaces(selfieToken, faceToken);
+    results.push({ photoId, confidence });
   }
 
   // Filter by threshold and sort by confidence descending
-  const THRESHOLD = 70;
+  const THRESHOLD = 60;
   return results
     .filter((r) => r.confidence >= THRESHOLD)
     .sort((a, b) => b.confidence - a.confidence);
