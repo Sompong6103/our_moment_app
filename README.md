@@ -132,6 +132,7 @@ our_moment_app/
 │   └── uploads/                  # Uploaded files (avatars, event photos)
 │
 └── README.md
+└── our_moment_db.sql             # Database file if can't use prisma generate
 ```
 
 ---
@@ -152,7 +153,7 @@ our_moment_app/
 ### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Sompong6103/our_moment_app.git
 cd our_moment_app
 ```
 
