@@ -1,5 +1,5 @@
 import prisma from '../../config/database';
-import { moveFile } from '../../shared/storage';
+import { moveFile, deleteFile } from '../../shared/storage';
 import { processImage } from '../../shared/image';
 import { emitToEvent } from '../../shared/socket';
 
@@ -43,19 +43,42 @@ export const photoService = {
   },
 
   async remove(eventId: string, photoId: string) {
+    const photo = await prisma.photo.findUnique({
+      where: { id: photoId },
+      select: { imageUrl: true },
+    });
+
     await prisma.photo.update({
       where: { id: photoId },
       data: { deletedAt: new Date() },
     });
 
+    // Delete actual file from uploads
+    if (photo?.imageUrl) {
+      deleteFile(photo.imageUrl);
+    }
+
     emitToEvent(eventId, 'photo:deleted', { photoId });
   },
 
   async bulkRemove(eventId: string, photoIds: string[]) {
+    // Get file paths before deleting
+    const photos = await prisma.photo.findMany({
+      where: { id: { in: photoIds }, eventId },
+      select: { imageUrl: true },
+    });
+
     await prisma.photo.updateMany({
       where: { id: { in: photoIds }, eventId },
       data: { deletedAt: new Date() },
     });
+
+    // Delete actual files from uploads
+    for (const photo of photos) {
+      if (photo.imageUrl) {
+        deleteFile(photo.imageUrl);
+      }
+    }
 
     emitToEvent(eventId, 'photo:bulk-deleted', { photoIds });
   },

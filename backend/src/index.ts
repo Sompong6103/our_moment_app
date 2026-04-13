@@ -2,11 +2,15 @@ import http from 'http';
 import app from './app';
 import { env } from './config/env';
 import { initSocket } from './shared/socket';
+import { startReminderScheduler } from './shared/scheduler';
 
 const server = http.createServer(app);
 
 // Initialize Socket.IO
 initSocket(server);
+
+// Start agenda reminder scheduler
+startReminderScheduler();
 
 server.listen(env.port, () => {
   console.log(`🚀 Server running on port ${env.port}`);

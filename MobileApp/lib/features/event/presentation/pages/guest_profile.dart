@@ -48,7 +48,7 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
 
   String _formatDate(String? iso) {
     if (iso == null) return '-';
-    final dt = DateTime.tryParse(iso);
+    final dt = DateTime.tryParse(iso)?.toLocal();
     if (dt == null) return '-';
     final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return '${dt.day}-${months[dt.month - 1]}-${dt.year}';
@@ -56,7 +56,7 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
 
   String _formatDateTime(String? iso) {
     if (iso == null) return '-';
-    final dt = DateTime.tryParse(iso);
+    final dt = DateTime.tryParse(iso)?.toLocal();
     if (dt == null) return '-';
     final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);

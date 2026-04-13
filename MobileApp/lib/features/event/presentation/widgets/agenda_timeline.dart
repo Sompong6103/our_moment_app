@@ -30,6 +30,7 @@ class AgendaTimeline extends StatelessWidget {
     return Column(
       children: List.generate(sorted.length, (index) {
         final item = sorted[index];
+        final originalIndex = items.indexOf(item);
         final isLast = index == sorted.length - 1;
         final isPast = item.isPast;
         final dotColor = isPast ? Colors.grey[400]! : AppColors.primary;
@@ -143,7 +144,7 @@ class AgendaTimeline extends StatelessWidget {
                           ),
                         ),
                         if (trailingBuilder != null)
-                          trailingBuilder!(context, index),
+                          trailingBuilder!(context, originalIndex),
                       ],
                     ),
                   ),

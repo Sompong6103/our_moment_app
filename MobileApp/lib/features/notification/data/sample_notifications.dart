@@ -1,13 +1,13 @@
 import '../domain/models/notification_model.dart';
 
 const sampleNotifications = <NotificationModel>[
-  NotificationModel(
-    text:
-        "The traditional Thai wedding procession (Khun Mak) of Aom & Ton's Wedding is about to begin.",
-    type: NotificationType.ceremony,
-  ),
-  NotificationModel(
-    text: "In 3 days you have Aom & Ton's Wedding event.",
-    type: NotificationType.reminder,
-  ),
+  /* NotificationModel(
+    id: 'notif-1',
+    type: 'event_update',
+    eventId: 'sample-1',
+    eventName: "Aom & Ton's Wedding",
+    title: 'Event Updated',
+    message: 'The event "Aom & Ton\'s Wedding" has been updated.',
+    isRead: false,
+  ), */
 ];

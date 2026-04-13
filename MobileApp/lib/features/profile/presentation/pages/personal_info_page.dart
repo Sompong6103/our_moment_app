@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import '../../../../core/services/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
@@ -23,8 +27,14 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   late final TextEditingController _phoneController;
   late String _selectedGender;
   bool _saving = false;
+  File? _pickedAvatar;
+  String? _currentAvatarUrl;
 
   final _profileRepo = ProfileRepository();
+  final _picker = ImagePicker();
+
+  static const _genderOptions = ['male', 'female', 'other'];
+  static const _genderLabels = {'male': 'Male', 'female': 'Female', 'other': 'Other'};
 
   @override
   void initState() {
@@ -33,6 +43,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     _emailController = TextEditingController(text: widget.profile.email);
     _phoneController = TextEditingController(text: widget.profile.phoneNumber);
     _selectedGender = widget.profile.gender.toLowerCase();
+    _currentAvatarUrl = widget.profile.avatarUrl;
+    if (!_genderOptions.contains(_selectedGender)) {
+      _selectedGender = 'other';
+    }
   }
 
   @override
@@ -47,6 +61,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
+      // Upload avatar first if changed
+      if (_pickedAvatar != null) {
+        await _profileRepo.uploadAvatar(_pickedAvatar!.path);
+      }
       await _profileRepo.updateProfile(
         fullName: _fullNameController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
@@ -69,6 +87,109 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     }
   }
 
+  Future<void> _pickAvatar() async {
+    final source = await showCupertinoModalPopup<ImageSource>(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: const Text('Change Profile Photo'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context, ImageSource.camera),
+            child: const Text('Take Photo'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context, ImageSource.gallery),
+            child: const Text('Choose from Library'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDestructiveAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (source == null) return;
+
+    final picked = await _picker.pickImage(source: source, imageQuality: 85);
+    if (picked == null) return;
+
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressQuality: 85,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Photo',
+          toolbarColor: AppColors.primary,
+          toolbarWidgetColor: Colors.white,
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: 'Crop Photo',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
+    if (cropped == null) return;
+
+    setState(() {
+      _pickedAvatar = File(cropped.path);
+    });
+  }
+
+  void _showGenderPicker() {
+    int selectedIndex = _genderOptions.indexOf(_selectedGender);
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 260,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              height: 44,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Done'),
+                    onPressed: () {
+                      setState(() => _selectedGender = _genderOptions[selectedIndex]);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: CupertinoPicker(
+                scrollController: FixedExtentScrollController(initialItem: selectedIndex),
+                itemExtent: 40,
+                onSelectedItemChanged: (index) => selectedIndex = index,
+                children: _genderOptions
+                    .map((g) => Center(child: Text(_genderLabels[g]!, style: const TextStyle(fontSize: 18))))
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppDetailScaffold(
@@ -81,9 +202,42 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 20),
-                child: AppAvatar(
-                  imageUrl: widget.profile.avatarUrl,
-                  size: 88,
+                child: GestureDetector(
+                  onTap: _pickAvatar,
+                  child: Stack(
+                    children: [
+                      _pickedAvatar != null
+                          ? Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: DecorationImage(
+                                  image: FileImage(_pickedAvatar!),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            )
+                          : AppAvatar(
+                              imageUrl: _currentAvatarUrl,
+                              size: 88,
+                            ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 15),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -93,6 +247,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
               label: 'Email',
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
+              readOnly: true,
             ),
             const SizedBox(height: 14),
             AppTextField(
@@ -110,40 +265,27 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
               ),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedGender,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 16,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
+            GestureDetector(
+              onTap: _showGenderPicker,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(11),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  border: Border.all(color: AppColors.border),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(11),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(11),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 1.2,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _genderLabels[_selectedGender]!,
+                      style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                  ],
                 ),
               ),
-              items: const [
-                DropdownMenuItem(value: 'male', child: Text('Male')),
-                DropdownMenuItem(value: 'female', child: Text('Female')),
-                DropdownMenuItem(value: 'other', child: Text('Other')),
-              ],
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => _selectedGender = value);
-              },
             ),
             const SizedBox(height: 22),
             AppPrimaryButton(

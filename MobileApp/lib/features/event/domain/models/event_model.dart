@@ -20,6 +20,7 @@ class EventModel {
   final bool isHost;
   final bool isJoined;
   final DateTime? eventDateTime;
+  final DateTime? eventDateEnd;
   final String? joinCode;
   final String? status;
   final String? organizerId;
@@ -50,6 +51,7 @@ class EventModel {
     this.isHost = false,
     this.isJoined = false,
     this.eventDateTime,
+    this.eventDateEnd,
     this.joinCode,
     this.status,
     this.organizerId,
@@ -82,12 +84,14 @@ class EventModel {
     String formattedDate = '';
     String? formattedTime;
     if (dateStart != null) {
+      final localStart = dateStart.toLocal();
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      formattedDate = '${days[dateStart.weekday - 1]}, ${dateStart.day} ${months[dateStart.month - 1]} ${dateStart.year}';
-      final startTime = '${dateStart.hour.toString().padLeft(2, '0')}:${dateStart.minute.toString().padLeft(2, '0')}';
+      formattedDate = '${days[localStart.weekday - 1]}, ${localStart.day} ${months[localStart.month - 1]} ${localStart.year}';
+      final startTime = '${localStart.hour.toString().padLeft(2, '0')}:${localStart.minute.toString().padLeft(2, '0')}';
       if (dateEnd != null) {
-        final endTime = '${dateEnd.hour.toString().padLeft(2, '0')}:${dateEnd.minute.toString().padLeft(2, '0')}';
+        final localEnd = dateEnd.toLocal();
+        final endTime = '${localEnd.hour.toString().padLeft(2, '0')}:${localEnd.minute.toString().padLeft(2, '0')}';
         formattedTime = '$startTime - $endTime';
       } else {
         formattedTime = startTime;
@@ -136,6 +140,7 @@ class EventModel {
       organizerId: json['organizerId'],
       acceptPhotos: json['acceptPhotos'] ?? false,
       eventDateTime: dateStart,
+      eventDateEnd: dateEnd,
       isHost: json['_isHost'] ?? false,
       isJoined: json['_isJoined'] ?? false,
       guestCount: counts?['guests'],
@@ -147,12 +152,36 @@ class EventModel {
     );
   }
 
-  /// Whether check-in is available (joined guest on event day).
+  /// Whether check-in is available (joined guest, event day, before end time).
   bool get canCheckIn {
     if (isHost || !isJoined || eventDateTime == null) return false;
     final now = DateTime.now();
-    return now.year == eventDateTime!.year &&
-        now.month == eventDateTime!.month &&
-        now.day == eventDateTime!.day;
+    final localStart = eventDateTime!.toLocal();
+    final sameDay = now.year == localStart.year &&
+        now.month == localStart.month &&
+        now.day == localStart.day;
+    if (!sameDay) return false;
+    // If event has end time, can only check in before it ends
+    if (eventDateEnd != null && now.isAfter(eventDateEnd!)) return false;
+    return true;
+  }
+
+  /// Whether the event has ended (past end time or past event day).
+  bool get isEventOver {
+    if (eventDateTime == null) return false;
+    final now = DateTime.now();
+    if (eventDateEnd != null) return now.isAfter(eventDateEnd!);
+    // No end time: consider event over after the event day
+    final localStart = eventDateTime!.toLocal();
+    final endOfDay = DateTime(localStart.year, localStart.month, localStart.day, 23, 59, 59);
+    return now.isAfter(endOfDay);
+  }
+
+  /// Whether the event ended more than 1 day ago.
+  bool get isEventPastOneDay {
+    if (eventDateTime == null) return false;
+    final now = DateTime.now();
+    final ref = eventDateEnd ?? eventDateTime!;
+    return now.difference(ref).inDays >= 1;
   }
 }

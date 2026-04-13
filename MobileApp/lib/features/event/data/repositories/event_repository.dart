@@ -136,4 +136,17 @@ class EventRepository {
     }, auth: true);
     return result;
   }
+
+  Future<List<String>> getMyReminders(String eventId) async {
+    final items = await _api.getList('/events/$eventId/agenda/reminders', auth: true);
+    return items.map((e) => e.toString()).toList();
+  }
+
+  Future<void> subscribeReminder(String eventId, String itemId) async {
+    await _api.post('/events/$eventId/agenda/$itemId/remind', auth: true);
+  }
+
+  Future<void> unsubscribeReminder(String eventId, String itemId) async {
+    await _api.delete('/events/$eventId/agenda/$itemId/remind', auth: true);
+  }
 }

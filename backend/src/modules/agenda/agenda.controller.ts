@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { agendaService } from './agenda.service';
+import { reminderService } from './reminder.service';
 
 export const agendaController = {
   async list(req: Request, res: Response) {
@@ -35,6 +36,36 @@ export const agendaController = {
       res.json({ message: 'Agenda item deleted' });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
+    }
+  },
+
+  async subscribeReminder(req: Request, res: Response) {
+    try {
+      const userId = req.userId!;
+      await reminderService.subscribe(req.params.itemId as string, userId);
+      res.json({ subscribed: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to subscribe' });
+    }
+  },
+
+  async unsubscribeReminder(req: Request, res: Response) {
+    try {
+      const userId = req.userId!;
+      await reminderService.unsubscribe(req.params.itemId as string, userId);
+      res.json({ subscribed: false });
+    } catch (err: any) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to unsubscribe' });
+    }
+  },
+
+  async getUserReminders(req: Request, res: Response) {
+    try {
+      const userId = req.userId!;
+      const itemIds = await reminderService.getUserReminders(req.params.eventId as string, userId);
+      res.json(itemIds);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch reminders' });
     }
   },
 };

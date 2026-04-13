@@ -12,6 +12,7 @@ class AppTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
   final bool enabled;
+  final bool readOnly;
   final int maxLines;
   final bool filled;
   final Color fillColor;
@@ -33,6 +34,7 @@ class AppTextField extends StatelessWidget {
     this.suffixIcon,
     this.onChanged,
     this.enabled = true,
+    this.readOnly = false,
     this.maxLines = 1,
     this.filled = true,
     this.fillColor = AppColors.white,
@@ -77,6 +79,7 @@ class AppTextField extends StatelessWidget {
           obscureText: obscureText,
           onChanged: onChanged,
           enabled: enabled,
+          readOnly: readOnly,
           maxLines: obscureText ? 1 : maxLines,
           decoration: InputDecoration(
             hintText: hintText,

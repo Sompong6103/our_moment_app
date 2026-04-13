@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import prisma from '../../config/database';
-import { moveFile } from '../../shared/storage';
+import { moveFile, deleteFile } from '../../shared/storage';
 
 export const userService = {
   async getProfile(userId: string) {
@@ -43,6 +43,15 @@ export const userService = {
   },
 
   async uploadAvatar(userId: string, tempFilePath: string, filename: string) {
+    // Delete old avatar file if exists
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+    if (existing?.avatarUrl) {
+      deleteFile(existing.avatarUrl);
+    }
+
     const dest = await moveFile(tempFilePath, 'avatars', filename);
 
     return prisma.user.update({

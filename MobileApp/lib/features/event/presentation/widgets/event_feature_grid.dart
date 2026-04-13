@@ -29,7 +29,7 @@ class EventFeatureGrid extends StatelessWidget {
                   // Navigate to Agenda Screen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AgendaScreen(eventId: eventId)),
+                    MaterialPageRoute(builder: (context) => AgendaScreen(eventId: eventId, isMember: isHost || (event?.isJoined ?? false))),
                   );
                 },
               ),
@@ -47,7 +47,7 @@ class EventFeatureGrid extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => LiveGalleryScreen(isHost: isHost, eventId: eventId, acceptPhotos: event?.acceptPhotos ?? false),
+                      builder: (context) => LiveGalleryScreen(isHost: isHost, eventId: eventId, acceptPhotos: event?.acceptPhotos ?? false, isMember: isHost || (event?.isJoined ?? false)),
                     ),
                   );
                 },
@@ -69,7 +69,7 @@ class EventFeatureGrid extends StatelessWidget {
                   //Navigate to Wish Wall Screen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => WishWallScreen(eventId: eventId)),
+                    MaterialPageRoute(builder: (context) => WishWallScreen(eventId: eventId, isMember: isHost || (event?.isJoined ?? false))),
                   );
                 },
               ),

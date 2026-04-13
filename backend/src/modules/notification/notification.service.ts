@@ -1,5 +1,5 @@
 import prisma from '../../config/database';
-import { emitToEvent } from '../../shared/socket';
+import { emitToEvent, emitToUser } from '../../shared/socket';
 
 export const notificationService = {
   async list(userId: string) {
@@ -17,12 +17,22 @@ export const notificationService = {
     });
   },
 
+  async markAllRead(userId: string) {
+    return prisma.notification.updateMany({
+      where: { userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+  },
+
   async announce(eventId: string, title: string, message: string, target: 'all' | 'checked_in' = 'all') {
     const event = await prisma.event.findFirst({
       where: { id: eventId, deletedAt: null },
       select: { id: true, title: true },
     });
     if (!event) throw new Error('Event not found');
+
+    const notifTitle = event.title;
+    const notifMessage = `📢 ประกาศจาก Host: ${message}`;
 
     // Get guests based on target
     const whereClause: any = { eventId };
@@ -41,20 +51,25 @@ export const notificationService = {
           userId: g.userId,
           eventId,
           type: 'update' as const,
-          title,
-          message,
+          title: notifTitle,
+          message: notifMessage,
         })),
       });
+
+      // Real-time push to each user
+      for (const g of guests) {
+        emitToUser(g.userId, 'notification', { type: 'update', title: notifTitle, message: notifMessage, eventId, eventName: event.title, createdAt: new Date() });
+      }
     }
 
     // Real-time broadcast
-    emitToEvent(eventId, 'announcement', { title, message, eventId });
+    emitToEvent(eventId, 'announcement', { title: notifTitle, message: notifMessage, eventId });
 
     return { recipientCount: guests.length };
   },
 
   async createForUser(userId: string, data: { eventId?: string; type: 'ceremony' | 'reminder' | 'update' | 'offer'; title: string; message: string }) {
-    return prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         userId,
         eventId: data.eventId,
@@ -63,5 +78,17 @@ export const notificationService = {
         message: data.message,
       },
     });
+
+    // Real-time push to user
+    emitToUser(userId, 'notification', {
+      id: notification.id,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      eventId: data.eventId,
+      createdAt: notification.createdAt,
+    });
+
+    return notification;
   },
 };

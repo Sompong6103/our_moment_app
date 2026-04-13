@@ -12,4 +12,8 @@ class NotificationRepository {
   Future<void> markRead(String notificationId) async {
     await _api.patch('/notifications/$notificationId/read', auth: true);
   }
+
+  Future<void> markAllRead() async {
+    await _api.patch('/notifications/read-all', auth: true);
+  }
 }

@@ -7,7 +7,8 @@ import '../../data/repositories/wish_repository.dart';
 
 class WishWallScreen extends StatefulWidget {
   final String eventId;
-  const WishWallScreen({super.key, required this.eventId});
+  final bool isMember;
+  const WishWallScreen({super.key, required this.eventId, this.isMember = false});
 
   @override
   State<WishWallScreen> createState() => _WishWallScreenState();
@@ -190,6 +191,7 @@ class _WishWallScreenState extends State<WishWallScreen> {
   }
 
   Widget _buildInputArea() {
+    if (!widget.isMember) return const SizedBox.shrink();
     if (_hasWished) {
       return Container(
         padding: const EdgeInsets.all(20),

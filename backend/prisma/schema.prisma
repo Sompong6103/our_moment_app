@@ -143,9 +143,24 @@ model AgendaItem {
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event     Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reminders AgendaReminder[]
 
   @@map("agenda_items")
+}
+
+// ─── Agenda Reminders (per-user subscription) ───
+model AgendaReminder {
+  id           String    @id @default(uuid())
+  agendaItemId String    @map("agenda_item_id")
+  userId       String    @map("user_id")
+  notifiedAt   DateTime? @map("notified_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  agendaItem AgendaItem @relation(fields: [agendaItemId], references: [id], onDelete: Cascade)
+
+  @@unique([agendaItemId, userId])
+  @@map("agenda_reminders")
 }
 
 // ─── Photos ───

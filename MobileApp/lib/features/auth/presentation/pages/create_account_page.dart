@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/routes/app_routes.dart';
@@ -16,14 +17,20 @@ class CreateAccountPage extends StatefulWidget {
 }
 
 class _CreateAccountPageState extends State<CreateAccountPage> {
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  String _selectedGender = 'male';
   bool _loading = false;
   final _authRepo = AuthRepository();
 
+  static const _genderOptions = ['male', 'female', 'other'];
+  static const _genderLabels = {'male': 'Male', 'female': 'Female', 'other': 'Other'};
+
   @override
   void dispose() {
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -31,11 +38,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   }
 
   Future<void> _handleRegister() async {
+    final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (fullName.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showError('Please fill in all fields');
       return;
     }
@@ -43,15 +51,15 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       _showError('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      _showError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      _showError('Password must be at least 8 characters');
       return;
     }
 
     setState(() => _loading = true);
     try {
       await _authRepo.register(
-        fullName: email.split('@').first,
+        fullName: fullName,
         email: email,
         password: password,
         confirmPassword: confirmPassword,
@@ -67,6 +75,57 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     }
   }
 
+  void _showGenderPicker() {
+    int selectedIndex = _genderOptions.indexOf(_selectedGender);
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 260,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              height: 44,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Done'),
+                    onPressed: () {
+                      setState(() => _selectedGender = _genderOptions[selectedIndex]);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: CupertinoPicker(
+                scrollController: FixedExtentScrollController(initialItem: selectedIndex),
+                itemExtent: 40,
+                onSelectedItemChanged: (index) => selectedIndex = index,
+                children: _genderOptions
+                    .map((g) => Center(child: Text(_genderLabels[g]!, style: const TextStyle(fontSize: 18))))
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -78,15 +137,53 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   Widget build(BuildContext context) {
     return AuthLayout(
       title: 'Create New Account',
-      subtitle: 'Enter your email and password to create new account',
+      subtitle: 'Enter your information to create new account',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          AppTextField(
+            label: 'Full Name',
+            hintText: 'Enter your full name',
+            controller: _fullNameController,
+          ),
+          const SizedBox(height: 14),
           AppTextField(
             label: 'Email',
             hintText: 'Enter your email',
             keyboardType: TextInputType.emailAddress,
             controller: _emailController,
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Gender',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _showGenderPicker,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _genderLabels[_selectedGender]!,
+                    style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
+                  ),
+                  const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 14),
           AppPasswordField(

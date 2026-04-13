@@ -201,8 +201,8 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
       final dateStart = _parseFormattedDate(widget.dateStart);
       final dateEnd = _parseFormattedDate(widget.dateEnd);
 
-      final dateStartStr = dateStart != null ? '${dateStart.toIso8601String()}Z' : '';
-      final dateEndStr = dateEnd != null ? '${dateEnd.toIso8601String()}Z' : '';
+      final dateStartStr = dateStart != null ? dateStart.toUtc().toIso8601String() : '';
+      final dateEndStr = dateEnd != null ? dateEnd.toUtc().toIso8601String() : '';
 
       String? themeColorHex;
       if (widget.themeColor != null) {
@@ -245,7 +245,7 @@ class _CreateEventStep2PageState extends State<CreateEventStep2Page> {
             title: item.title,
             description: item.description.isNotEmpty ? item.description : null,
             location: item.location.isNotEmpty ? item.location : null,
-            startTime: agendaTime != null ? '${agendaTime.toIso8601String()}Z' : '',
+            startTime: agendaTime != null ? agendaTime.toUtc().toIso8601String() : '',
             sortOrder: i,
           );
         }

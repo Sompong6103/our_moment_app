@@ -12,7 +12,8 @@ class LiveGalleryScreen extends StatefulWidget {
   final bool isHost;
   final String? eventId;
   final bool acceptPhotos;
-  const LiveGalleryScreen({super.key, this.isHost = false, this.eventId, this.acceptPhotos = false});
+  final bool isMember;
+  const LiveGalleryScreen({super.key, this.isHost = false, this.eventId, this.acceptPhotos = false, this.isMember = false});
 
   @override
   State<LiveGalleryScreen> createState() => _LiveGalleryScreenState();
@@ -75,7 +76,7 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
   Widget build(BuildContext context) {
     return AppDetailScaffold(
       title: 'Live Gallery',
-      floatingActionButton: (widget.isHost || widget.acceptPhotos)
+      floatingActionButton: (widget.isMember && (widget.isHost || widget.acceptPhotos))
           ? FloatingActionButton(
               onPressed: _pickImage,
               backgroundColor: AppColors.primary,

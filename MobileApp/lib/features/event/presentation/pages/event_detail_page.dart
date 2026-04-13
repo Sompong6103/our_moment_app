@@ -33,6 +33,17 @@ class _EventDetailPageState extends State<EventDetailPage> {
     _showJoinButton = widget.showJoinButton;
     _joined = widget.event.isJoined;
     _loadAttendeeAvatars();
+    _loadGuestStatus();
+  }
+
+  Future<void> _loadGuestStatus() async {
+    if (widget.event.isHost || !_joined) return;
+    try {
+      final status = await _guestRepo.getMyStatus(widget.event.id);
+      if (mounted && status['status'] == 'checked_in') {
+        setState(() => _checkedIn = true);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadAttendeeAvatars() async {
@@ -53,13 +64,14 @@ class _EventDetailPageState extends State<EventDetailPage> {
     }
   }
 
-  bool get _canAttendEvent {
-    final eventDate = widget.event.eventDateTime;
-    if (widget.event.isHost || !_joined || eventDate == null) return false;
-    final now = DateTime.now();
-    return now.year == eventDate.year &&
-        now.month == eventDate.month &&
-        now.day == eventDate.day;
+  bool get _canCheckIn {
+    if (widget.event.isHost || !_joined) return false;
+    return widget.event.canCheckIn;
+  }
+
+  bool get _showPastStatus {
+    if (widget.event.isHost || !_joined) return false;
+    return widget.event.isEventOver;
   }
 
   void _handleCheckIn() async {
@@ -226,8 +238,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 ),
               ),
             ),
-          // ── Check-in button (joined guest on event day) ──
-          if (!_showJoinButton && _canAttendEvent)
+          // ── Check-in button (joined guest, event day, before end) ──
+          if (!_showJoinButton && _canCheckIn)
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -247,6 +259,44 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       disabledForegroundColor: AppColors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     ),
+                  ),
+                ),
+              ),
+            ),
+          // ── Past event: show attendance status ──
+          if (!_showJoinButton && _showPastStatus)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                child: Container(
+                  width: double.infinity,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: _checkedIn ? Colors.green.withAlpha(25) : Colors.red.withAlpha(25),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: _checkedIn ? Colors.green : Colors.red,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _checkedIn ? Icons.check_circle : Icons.cancel_outlined,
+                        size: 20,
+                        color: _checkedIn ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _checkedIn ? 'You attended this event' : 'You did not attend this event',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: _checkedIn ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

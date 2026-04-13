@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/services/background_notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/app_routes.dart';
 import 'core/services/token_storage.dart';
@@ -8,7 +9,11 @@ import 'features/auth/presentation/pages/create_account_page.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
 
-void main() => runApp(const OurMomentApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await BackgroundNotificationService().initialize();
+  runApp(const OurMomentApp());
+}
 
 class OurMomentApp extends StatelessWidget {
   const OurMomentApp({super.key});

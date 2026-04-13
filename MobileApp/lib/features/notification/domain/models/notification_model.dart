@@ -58,7 +58,9 @@ extension NotificationTypeStyle on NotificationType {
 
 class NotificationModel {
   final String? id;
-  final String text;
+  final String title;
+  final String message;
+  final String? eventName;
   final NotificationType type;
   final bool isRead;
   final DateTime? createdAt;
@@ -66,7 +68,9 @@ class NotificationModel {
 
   const NotificationModel({
     this.id,
-    required this.text,
+    required this.title,
+    required this.message,
+    this.eventName,
     required this.type,
     this.isRead = false,
     this.createdAt,
@@ -89,12 +93,22 @@ class NotificationModel {
         type = NotificationType.update;
     }
 
+    // Extract event name from nested event object or direct field
+    String? eventName;
+    if (json['event'] is Map) {
+      eventName = (json['event'] as Map<String, dynamic>)['title'];
+    } else if (json['eventName'] is String) {
+      eventName = json['eventName'];
+    }
+
     return NotificationModel(
       id: json['id'],
-      text: json['message'] ?? json['title'] ?? '',
+      title: json['title'] ?? '',
+      message: json['message'] ?? json['title'] ?? '',
+      eventName: eventName,
       type: type,
       isRead: json['isRead'] ?? json['readAt'] != null,
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
       eventId: json['eventId'],
     );
   }

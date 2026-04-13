@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/services/api_client.dart';
+import '../../../../core/services/background_notification_service.dart';
+import '../../../../core/services/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../event/data/repositories/event_repository.dart';
@@ -31,14 +34,41 @@ class _HomePageState extends State<HomePage> {
   String? _avatarUrl;
   bool _loading = true;
 
+  int get _unreadCount => _notifications.where((n) => !n.isRead).length;
+
   final _eventRepo = EventRepository();
   final _notifRepo = NotificationRepository();
   final _profileRepo = ProfileRepository();
+  final _socketService = SocketService();
+  StreamSubscription? _notifSub;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _initRealTime();
+  }
+
+  @override
+  void dispose() {
+    _notifSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initRealTime() async {
+    // Start background service for push notifications when app is closed
+    await BackgroundNotificationService().start();
+
+    // In-app socket: only updates the notification list in UI (no local push — background service handles that)
+    await _socketService.connect();
+    _notifSub = _socketService.onNotification.listen((data) {
+      final notif = NotificationModel.fromJson(data);
+      if (mounted) {
+        setState(() {
+          _notifications.insert(0, notif);
+        });
+      }
+    });
   }
 
   Future<void> _loadData() async {
@@ -118,7 +148,27 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTabBody() {
     if (_navIndex == 1) {
-      return NotificationPage(notifications: _notifications);
+      return NotificationPage(
+        notifications: _notifications,
+        onAllRead: () {
+          setState(() {
+            _notifications = _notifications
+                .map((n) => n.isRead
+                    ? n
+                    : NotificationModel(
+                        id: n.id,
+                        title: n.title,
+                        message: n.message,
+                        eventName: n.eventName,
+                        type: n.type,
+                        isRead: true,
+                        createdAt: n.createdAt,
+                        eventId: n.eventId,
+                      ))
+                .toList();
+          });
+        },
+      );
     }
 
     if (_navIndex == 2) {
@@ -213,17 +263,25 @@ class _HomePageState extends State<HomePage> {
               label: 'Home',
             ),
             NavigationDestination(
-              icon: Icon(
-                Icons.notifications,
-                size: 26,
-                color: _navIndex == 1
-                    ? AppColors.primary
-                    : AppColors.iconInactive,
+              icon: Badge(
+                isLabelVisible: _unreadCount > 0,
+                label: Text('$_unreadCount', style: const TextStyle(fontSize: 10, color: Colors.white)),
+                child: Icon(
+                  Icons.notifications,
+                  size: 26,
+                  color: _navIndex == 1
+                      ? AppColors.primary
+                      : AppColors.iconInactive,
+                ),
               ),
-              selectedIcon: const Icon(
-                Icons.notifications,
-                color: AppColors.primary,
-                size: 26,
+              selectedIcon: Badge(
+                isLabelVisible: _unreadCount > 0,
+                label: Text('$_unreadCount', style: const TextStyle(fontSize: 10, color: Colors.white)),
+                child: const Icon(
+                  Icons.notifications,
+                  color: AppColors.primary,
+                  size: 26,
+                ),
               ),
               label: 'Notifications',
             ),

@@ -24,11 +24,12 @@ class AgendaItem {
     final startTime = rawTime != null ? DateTime.tryParse(rawTime.toString()) : null;
     String formattedDateTime = '';
     if (startTime != null) {
+      final local = startTime.toLocal();
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      final h = startTime.hour.toString().padLeft(2, '0');
-      final m = startTime.minute.toString().padLeft(2, '0');
-      formattedDateTime = '${days[startTime.weekday - 1]}, ${startTime.day} ${months[startTime.month - 1]} ${startTime.year} | $h:$m';
+      final h = local.hour.toString().padLeft(2, '0');
+      final m = local.minute.toString().padLeft(2, '0');
+      formattedDateTime = '${days[local.weekday - 1]}, ${local.day} ${months[local.month - 1]} ${local.year} | $h:$m';
     }
 
     return AgendaItem(

@@ -65,21 +65,13 @@ class _EditEventPageState extends State<EditEventPage> {
     _themeName = e.themeName;
     _themeColor = e.themeColor;
 
-    // Dates
-    _dateStart = e.eventDateTime;
+    // Dates — convert UTC to local for editing
+    _dateStart = e.eventDateTime?.toLocal();
     _dateStartController = TextEditingController(
       text: _dateStart != null ? _formatDateTime(_dateStart!) : '',
     );
-    if (_dateStart != null && e.time != null && e.time!.contains(' - ')) {
-      final endPart = e.time!.split(' - ').last.trim();
-      final parts = endPart.split(':');
-      if (parts.length == 2) {
-        final h = int.tryParse(parts[0]);
-        final m = int.tryParse(parts[1]);
-        if (h != null && m != null) {
-          _dateEnd = DateTime(_dateStart!.year, _dateStart!.month, _dateStart!.day, h, m);
-        }
-      }
+    if (_dateStart != null && e.eventDateEnd != null) {
+      _dateEnd = e.eventDateEnd!.toLocal();
     }
     _dateEndController = TextEditingController(
       text: _dateEnd != null ? _formatDateTime(_dateEnd!) : '',
@@ -463,7 +455,7 @@ class _EditEventPageState extends State<EditEventPage> {
       for (int i = 0; i < _agendaItems.length; i++) {
         final item = _agendaItems[i];
         final agendaTime = _parseFormattedDate(item.dateTime);
-        final timeStr = agendaTime != null ? '${agendaTime.toIso8601String()}Z' : '';
+        final timeStr = agendaTime != null ? agendaTime.toUtc().toIso8601String() : '';
 
         if (item.id != null) {
           // Existing item → update

@@ -20,6 +20,15 @@ export const notificationController = {
     }
   },
 
+  async markAllRead(req: Request, res: Response) {
+    try {
+      await notificationService.markAllRead(req.userId!);
+      res.json({ message: 'All notifications marked as read' });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to mark all as read' });
+    }
+  },
+
   async announce(req: Request, res: Response) {
     try {
       const { title, message, target } = req.body;

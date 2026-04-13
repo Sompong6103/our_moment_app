@@ -3,12 +3,12 @@ import '../theme/app_colors.dart';
 
 class AppSwitch extends StatelessWidget {
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   const AppSwitch({
     super.key,
     required this.value,
-    required this.onChanged,
+    this.onChanged,
   });
 
   @override

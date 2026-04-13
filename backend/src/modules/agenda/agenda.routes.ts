@@ -12,4 +12,9 @@ router.post('/', requireHost, agendaController.create);
 router.patch('/:itemId', requireHost, agendaController.update);
 router.delete('/:itemId', requireHost, agendaController.remove);
 
+// Reminder subscription endpoints
+router.get('/reminders', requireEventAccess, agendaController.getUserReminders);
+router.post('/:itemId/remind', requireEventAccess, agendaController.subscribeReminder);
+router.delete('/:itemId/remind', requireEventAccess, agendaController.unsubscribeReminder);
+
 export default router;
