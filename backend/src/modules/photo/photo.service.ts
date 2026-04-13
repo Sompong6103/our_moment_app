@@ -2,7 +2,7 @@ import prisma from '../../config/database';
 import { moveFile, deleteFile } from '../../shared/storage';
 import { processImage } from '../../shared/image';
 import { emitToEvent } from '../../shared/socket';
-import { detectFaces, searchFaceInEvent } from '../../shared/facepp';
+import { detectFaces, ensureFaceSet, addFacesToSet, searchFaceInFaceSet, removeFacesFromSet } from '../../shared/facepp';
 import path from 'path';
 import { env } from '../../config/env';
 
@@ -43,6 +43,9 @@ export const photoService = {
             faceToken: token,
           })),
         });
+        // Add to event's FaceSet for Search API
+        await ensureFaceSet(eventId);
+        await addFacesToSet(eventId, faceTokens);
       }
     }).catch((err) => {
       console.error('[Face++] Failed to detect faces for photo:', photo.id, err);
@@ -66,6 +69,15 @@ export const photoService = {
       select: { imageUrl: true },
     });
 
+    // Remove face_tokens from FaceSet
+    const faces = await prisma.photoFace.findMany({
+      where: { photoId },
+      select: { faceToken: true },
+    });
+    if (faces.length > 0) {
+      removeFacesFromSet(eventId, faces.map((f) => f.faceToken)).catch(() => {});
+    }
+
     await prisma.photo.update({
       where: { id: photoId },
       data: { deletedAt: new Date() },
@@ -80,16 +92,25 @@ export const photoService = {
   },
 
   async bulkRemove(eventId: string, photoIds: string[]) {
-    // Get file paths before deleting
+    // Get file paths and face tokens before deleting
     const photos = await prisma.photo.findMany({
       where: { id: { in: photoIds }, eventId },
       select: { imageUrl: true },
+    });
+    const faces = await prisma.photoFace.findMany({
+      where: { photoId: { in: photoIds } },
+      select: { faceToken: true },
     });
 
     await prisma.photo.updateMany({
       where: { id: { in: photoIds }, eventId },
       data: { deletedAt: new Date() },
     });
+
+    // Remove face_tokens from FaceSet
+    if (faces.length > 0) {
+      removeFacesFromSet(eventId, faces.map((f) => f.faceToken)).catch(() => {});
+    }
 
     // Delete actual files from uploads
     for (const photo of photos) {
@@ -102,28 +123,8 @@ export const photoService = {
   },
 
   async searchByFace(eventId: string, selfiePath: string) {
-    // Get all face tokens for this event
-    const eventFaces = await prisma.photoFace.findMany({
-      where: {
-        photo: {
-          eventId,
-          deletedAt: null,
-        },
-      },
-      select: {
-        photoId: true,
-        faceToken: true,
-      },
-    });
-
-    if (eventFaces.length === 0) {
-      // Process selfie to clean up temp file
-      try { deleteFile(selfiePath); } catch (_) {}
-      return [];
-    }
-
-    // Search using Face++ compare
-    const matches = await searchFaceInEvent(selfiePath, eventFaces);
+    // Use Face++ Search API against event's FaceSet (single API call)
+    const matches = await searchFaceInFaceSet(selfiePath, eventId);
 
     // Clean up selfie temp file
     try {
@@ -133,14 +134,27 @@ export const photoService = {
 
     if (matches.length === 0) return [];
 
-    // Deduplicate by photoId (keep highest confidence)
+    // Map face_tokens back to photoIds
+    const matchedTokens = matches.map((m) => m.faceToken);
+    const faceRecords = await prisma.photoFace.findMany({
+      where: {
+        faceToken: { in: matchedTokens },
+        photo: { eventId, deletedAt: null },
+      },
+      select: { photoId: true, faceToken: true },
+    });
+
+    // Build confidence map: photoId -> highest confidence
     const bestByPhoto = new Map<string, number>();
-    for (const m of matches) {
-      const existing = bestByPhoto.get(m.photoId) || 0;
-      if (m.confidence > existing) bestByPhoto.set(m.photoId, m.confidence);
+    for (const record of faceRecords) {
+      const match = matches.find((m) => m.faceToken === record.faceToken);
+      if (!match) continue;
+      const existing = bestByPhoto.get(record.photoId) || 0;
+      if (match.confidence > existing) bestByPhoto.set(record.photoId, match.confidence);
     }
 
     const photoIds = Array.from(bestByPhoto.keys());
+    if (photoIds.length === 0) return [];
 
     // Fetch matching photos
     const photos = await prisma.photo.findMany({

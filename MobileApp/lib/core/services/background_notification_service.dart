@@ -112,7 +112,7 @@ Future<void> _onStart(ServiceInstance service) async {
   }
 
   // Connect Socket.IO
-  const serverUrl = 'http://${ApiConfig.host}:3000';
+  final serverUrl = ApiConfig.serverUrl;
   final socket = io.io(
     serverUrl,
     io.OptionBuilder()

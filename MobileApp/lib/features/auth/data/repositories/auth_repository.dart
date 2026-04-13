@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../../core/config/app_env.dart';
 import '../../../../core/services/api_client.dart';
 import '../../../../core/services/token_storage.dart';
 import '../models/user_model.dart';
@@ -53,8 +54,8 @@ class AuthRepository {
     final gsi = GoogleSignIn.instance;
     if (!_googleInitialized) {
       await gsi.initialize(
-        clientId: '959978755059-ms5k2ebjgcvk5dib9t8v7r6au4c3aghv.apps.googleusercontent.com',
-        serverClientId: '959978755059-7qanfth6claj62p97ml1n90og40e057k.apps.googleusercontent.com',
+        clientId: AppEnv.googleClientId,
+        serverClientId: AppEnv.googleServerClientId,
       );
       _googleInitialized = true;
     }

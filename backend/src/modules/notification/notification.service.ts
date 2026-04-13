@@ -32,7 +32,7 @@ export const notificationService = {
     if (!event) throw new Error('Event not found');
 
     const notifTitle = event.title;
-    const notifMessage = `📢 ประกาศจาก Host: ${message}`;
+    const notifMessage = `📢 Announcement from Host: ${message}`;
 
     // Get guests based on target
     const whereClause: any = { eventId };

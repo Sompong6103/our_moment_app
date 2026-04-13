@@ -58,7 +58,7 @@ class _LiveGalleryScreenState extends State<LiveGalleryScreen> {
 
   Future<void> _pickImage() async {
     if (widget.eventId == null) return;
-    final images = await _picker.pickMultiImage(imageQuality: 85);
+    final images = await _picker.pickMultiImage(imageQuality: 85, requestFullMetadata: false);
     if (images.isNotEmpty) {
       for (final img in images) {
         try {

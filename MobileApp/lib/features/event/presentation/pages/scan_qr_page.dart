@@ -46,7 +46,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('พบอีเวนต์: ${result['eventName']}'),
+            content: Text('Event found: ${result['eventName']}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -54,7 +54,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'เข้าร่วมไม่สำเร็จ'),
+            content: Text(result['message'] ?? 'Failed to join event'),
             backgroundColor: Colors.red,
           ),
         );
@@ -65,7 +65,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่'),
+          content: Text('An error occurred. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -100,7 +100,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
           !barcodes.barcodes.any((b) => b.rawValue != null)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('ไม่พบ QR Code ในรูปภาพ'),
+            content: Text('No QR Code found in the image'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -115,7 +115,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('ไม่สามารถวิเคราะห์รูปภาพได้ (ไม่รองรับ Simulator)'),
+          content: Text('Unable to analyze image (not supported on Simulator)'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -124,7 +124,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ไม่สามารถอ่าน QR Code จากรูปภาพได้: $e'),
+          content: Text('Unable to read QR Code from image: $e'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -147,7 +147,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
                     const Icon(Icons.videocam_off, color: Colors.white54, size: 64),
                     const SizedBox(height: 16),
                     Text(
-                      'ไม่สามารถเปิดกล้องได้\n${error.errorDetails?.message ?? ''}',
+                      'Unable to open camera\n${error.errorDetails?.message ?? ''}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white54, fontSize: 14),
                     ),

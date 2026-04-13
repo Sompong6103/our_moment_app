@@ -83,7 +83,7 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ส่วน Header Profile
+            // Profile header section
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -148,7 +148,7 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
             ),
             const SizedBox(height: 25),
 
-            // ฟิลด์ข้อมูลต่างๆ
+            // Info fields
             _buildInfoField('Join event date', joinDate),
             _buildInfoField('Check in time', checkInTime),
             if (wish.isNotEmpty)
@@ -234,7 +234,7 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
     );
   }
 
-  // Widget ช่วยสร้างช่องแสดงข้อมูล
+  // Helper widget to build an info field
   Widget _buildInfoField(
     String label,
     String value, {
@@ -268,4 +268,4 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
   }
 }
 
-// Widget สำหรับแถบรายชื่อในหน้าแรก
+// Widget for guest list row on the main page

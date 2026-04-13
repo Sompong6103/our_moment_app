@@ -155,38 +155,38 @@ class _LoginPageState extends State<LoginPage> {
             controller: _passwordController,
           ),
           const SizedBox(height: 6),
-          Row(
-            children: [
-              Checkbox(
-                value: _rememberMe,
-                onChanged: (value) {
-                  setState(() => _rememberMe = value ?? false);
-                },
-                side: const BorderSide(color: Color(0xFF888888)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const Text(
-                'Remember me',
-                style: TextStyle(fontSize: 14, color: Color(0xFF6C7278)),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.forgotPassword);
-                },
-                child: const Text(
-                  'Forgot Password ?',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     Checkbox(
+          //       value: _rememberMe,
+          //       onChanged: (value) {
+          //         setState(() => _rememberMe = value ?? false);
+          //       },
+          //       side: const BorderSide(color: Color(0xFF888888)),
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(4),
+          //       ),
+          //     ),
+          //     const Text(
+          //       'Remember me',
+          //       style: TextStyle(fontSize: 14, color: Color(0xFF6C7278)),
+          //     ),
+          //     const Spacer(),
+          //     TextButton(
+          //       onPressed: () {
+          //         Navigator.pushNamed(context, AppRoutes.forgotPassword);
+          //       },
+          //       child: const Text(
+          //         'Forgot Password ?',
+          //         style: TextStyle(
+          //           color: AppColors.primary,
+          //           fontWeight: FontWeight.w700,
+          //           fontSize: 14,
+          //         ),
+          //       ),
+          //     ),
+          //   ],
+          // ),
           const SizedBox(height: 8),
           AppPrimaryButton(
             label: _loading ? 'Logging in...' : 'Login',
