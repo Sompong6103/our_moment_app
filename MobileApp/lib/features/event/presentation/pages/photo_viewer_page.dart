@@ -30,7 +30,10 @@ class GalleryPhoto {
     String uploaderAvatar = '';
     if (json['uploader'] is Map) {
       uploaderName = json['uploader']['fullName'] ?? 'Unknown';
-      uploaderAvatar = json['uploader']['avatarUrl'] ?? '';
+      final rawAvatar = json['uploader']['avatarUrl'] ?? '';
+      if (rawAvatar.isNotEmpty) {
+        uploaderAvatar = rawAvatar.startsWith('http') ? rawAvatar : '${ApiConfig.uploadsUrl}/$rawAvatar';
+      }
     }
 
     String? imageUrl;
@@ -283,7 +286,12 @@ class _PhotoViewerPageState extends State<PhotoViewerPage> {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(photo.uploaderAvatar),
+                    backgroundImage: photo.uploaderAvatar.isNotEmpty
+                        ? NetworkImage(photo.uploaderAvatar)
+                        : null,
+                    child: photo.uploaderAvatar.isEmpty
+                        ? const Icon(Icons.person, size: 20, color: Colors.white)
+                        : null,
                   ),
                   const SizedBox(width: 12),
                   Column(

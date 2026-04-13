@@ -166,10 +166,11 @@ class _GuestsScreenState extends State<GuestsScreen> {
                     MaterialPageRoute(
                       builder: (_) => GuestProfileScreen(
                         eventId: widget.eventId,
-                        guestId: guest['id'] ?? '',
+                        guestId: user['id'] ?? '',
                         name: name,
                         email: email,
                         imageUrl: avatar,
+                        isHost: true,
                       ),
                     ),
                   ),

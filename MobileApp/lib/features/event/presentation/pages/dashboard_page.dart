@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+
+import '../../../../core/services/api_config.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -15,6 +17,7 @@ import '../../../../core/widgets/guest_card.dart';
 import '../../data/repositories/event_repository.dart';
 import '../../data/repositories/guest_repository.dart';
 import '../../domain/models/event_model.dart';
+import 'allergies_see_all.dart';
 import 'analytics_page.dart';
 import 'edit_event_page.dart';
 import 'guest_profile.dart';
@@ -724,9 +727,27 @@ class _DashboardPageState extends State<DashboardPage> {
                 final email = user['email'] ?? '';
                 final avatar = user['avatarUrl'] ?? '';
                 final checkedIn = guest['status'] == 'checked_in';
+
+                String joinTime = '';
+                if (guest['joinedAt'] != null) {
+                  final dt = DateTime.tryParse(guest['joinedAt']);
+                  if (dt != null) {
+                    final diff = DateTime.now().difference(dt);
+                    if (diff.inMinutes < 1) {
+                      joinTime = 'Joined just now';
+                    } else if (diff.inHours < 1) {
+                      joinTime = 'Joined ${diff.inMinutes}m ago';
+                    } else if (diff.inDays < 1) {
+                      joinTime = 'Joined ${diff.inHours}h ago';
+                    } else {
+                      joinTime = 'Joined ${diff.inDays}d ago';
+                    }
+                  }
+                }
+
                 return GuestCard(
                   name: name,
-                  time: '',
+                  time: joinTime,
                   avatarUrl: avatar,
                   inEvent: checkedIn,
                   onTap: () => Navigator.push(
@@ -734,11 +755,66 @@ class _DashboardPageState extends State<DashboardPage> {
                     MaterialPageRoute(
                       builder: (_) => GuestProfileScreen(
                         eventId: _event.id,
-                        guestId: guest['id'] ?? '',
+                        guestId: user['id'] ?? '',
                         name: name,
                         email: email,
                         imageUrl: avatar,
+                        isHost: true,
                       ),
+                    ),
+                  ),
+                );
+              }),
+            ],
+
+            // ── Allergies ──
+            if (_guests.any((g) => (g['allergies'] as String?)?.isNotEmpty == true)) ...[              const SizedBox(height: 28),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Allergies', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AllergiesSeeAllScreen(eventId: _event.id))),
+                    child: const Text('See all', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ..._guests.where((g) => (g['allergies'] as String?)?.isNotEmpty == true).take(5).map((guest) {
+                final user = guest['user'] as Map<String, dynamic>? ?? {};
+                final name = user['fullName'] ?? 'Unknown';
+                final avatar = user['avatarUrl'] ?? '';
+                final allergies = guest['allergies'] as String;
+                final resolvedAvatar = ApiConfig.fullImageUrl(avatar);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage: resolvedAvatar != null ? NetworkImage(resolvedAvatar) : null,
+                          child: resolvedAvatar == null ? const Icon(Icons.person, size: 20, color: Colors.white) : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 2),
+                              Text(allergies, style: const TextStyle(fontSize: 13, color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                      ],
                     ),
                   ),
                 );

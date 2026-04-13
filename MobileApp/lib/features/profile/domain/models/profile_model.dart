@@ -1,3 +1,5 @@
+import '../../../../core/services/api_config.dart';
+
 class ProfileModel {
   final String? id;
   final String fullName;
@@ -15,6 +17,12 @@ class ProfileModel {
     this.avatarUrl,
   });
 
+  static String? _fullImageUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http')) return url;
+    return '${ApiConfig.uploadsUrl}/$url';
+  }
+
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
       id: json['id'],
@@ -22,7 +30,7 @@ class ProfileModel {
       email: json['email'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       gender: json['gender'] ?? 'other',
-      avatarUrl: json['avatarUrl'],
+      avatarUrl: _fullImageUrl(json['avatarUrl']),
     );
   }
 }

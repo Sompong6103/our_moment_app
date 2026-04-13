@@ -62,6 +62,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         IOSUiSettings(
           title: 'Crop Banner',
+          doneButtonTitle: 'Done',
+          cancelButtonTitle: 'Cancel',
           aspectRatioLockEnabled: true,
           resetAspectRatioEnabled: false,
         ),

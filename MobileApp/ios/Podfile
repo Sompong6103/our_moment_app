@@ -40,4 +40,62 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
   end
+
+  # Fix: TOCropViewController text buttons not created on iOS 26 when built with Xcode 16.
+  # The @available(iOS 26.0, *) runtime check skips text button creation,
+  # but #ifdef __IPHONE_26_0 (compile-time) is false, so _showOnlyIcons stays NO,
+  # causing BOTH icon and text buttons to be hidden → no Cancel/Done buttons visible.
+  # This patch removes the @available guard so text buttons are always created,
+  # and fixes layout overlap by guarding glass-based layout on _glassView existence.
+  toolbar_file = File.join(installer.sandbox.root, 'TOCropViewController',
+    'Objective-C', 'TOCropViewController', 'Views', 'TOCropToolbar.m')
+  if File.exist?(toolbar_file)
+    File.chmod(0644, toolbar_file)
+    content = File.read(toolbar_file)
+    patched = false
+
+    # Patch 1: remove @available(iOS 26.0, *) guard around Done text button creation
+    if content.gsub!(
+      /if \(@available\(iOS 26\.0, \*\)\) \{\s*\} else \{(\s*_doneTextButton =.*?)\}/m,
+      '/* Patched: always create done text button */{\1}'
+    )
+      patched = true
+    end
+
+    # Patch 2: remove @available(iOS 26.0, *) guard around Cancel text button creation
+    if content.gsub!(
+      /if \(@available\(iOS 26\.0, \*\)\) \{\s*\} else \{(\s*_cancelTextButton =.*?)\}/m,
+      '/* Patched: always create cancel text button */{\1}'
+    )
+      patched = true
+    end
+
+    # Patch 3: fix insetPadding = 0 on iOS 26 when _glassView is nil
+    if content.gsub!(
+      /if \(@available\(iOS 26\.0, \*\)\) \{\s*\n\s*insetPadding = 0\.0f;\s*\n\s*\}/m,
+      'if (@available(iOS 26.0, *)) { if (_glassView) { insetPadding = 0.0f; } }'
+    )
+      patched = true
+    end
+
+    # Patch 4: wrap glass layout path with _glassView check (unique context: glassPadding only appears here)
+    if content.sub!(
+      "    if (@available(iOS 26.0, *)) {\n        CGFloat glassPadding = 6.0f;",
+      "    if (@available(iOS 26.0, *)) {\n      if (_glassView) {\n        CGFloat glassPadding = 6.0f;"
+    )
+      patched = true
+    end
+
+    # Patch 5: close _glassView check and change else → if (!_glassView)
+    # Use unique context (position += buttonSize) to avoid matching inner } else {
+    if content.sub!(
+      "            position += buttonSize + buttonPadding;\n        }\n    } else {\n        NSInteger count = buttons.count;",
+      "            position += buttonSize + buttonPadding;\n        }\n      }\n    }\n    if (!_glassView) {\n        NSInteger count = buttons.count;"
+    )
+      patched = true
+    end
+
+    File.write(toolbar_file, content)
+    Pod::UI.puts "Patched TOCropToolbar.m: #{patched ? 'applied fixes' : 'already patched'}"
+  end
 end

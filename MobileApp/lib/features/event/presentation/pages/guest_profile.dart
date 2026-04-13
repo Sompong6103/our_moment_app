@@ -12,6 +12,7 @@ class GuestProfileScreen extends StatefulWidget {
   final String name;
   final String email;
   final String imageUrl;
+  final bool isHost;
 
   const GuestProfileScreen({
     super.key,
@@ -20,6 +21,7 @@ class GuestProfileScreen extends StatefulWidget {
     required this.name,
     required this.email,
     required this.imageUrl,
+    this.isHost = false,
   });
 
   @override
@@ -93,7 +95,12 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 35,
-                    backgroundImage: NetworkImage(widget.imageUrl),
+                    backgroundImage: ApiConfig.fullImageUrl(widget.imageUrl) != null
+                        ? NetworkImage(ApiConfig.fullImageUrl(widget.imageUrl)!)
+                        : null,
+                    child: ApiConfig.fullImageUrl(widget.imageUrl) == null
+                        ? const Icon(Icons.person, size: 35, color: Colors.white)
+                        : null,
                   ),
                   const SizedBox(width: 15),
                   Expanded(
@@ -127,7 +134,7 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        inEvent ? 'In event' : 'Registered',
+                        inEvent ? 'Checked in' : 'In event',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -171,20 +178,48 @@ class _GuestProfileScreenState extends State<GuestProfileScreen> {
                   final p = photos[index] as Map<String, dynamic>;
                   final url = p['imageUrl'] as String? ?? '';
                   final fullUrl = url.startsWith('http') ? url : '${ApiConfig.uploadsUrl}/$url';
+                  final avatarResolved = ApiConfig.fullImageUrl(widget.imageUrl) ?? '';
+
+                  // Calculate relative upload time
+                  String uploadTime = '';
+                  final timeStr = p['uploadedAt'] as String?;
+                  if (timeStr != null) {
+                    final dt = DateTime.tryParse(timeStr);
+                    if (dt != null) {
+                      final diff = DateTime.now().difference(dt);
+                      if (diff.inMinutes < 1) {
+                        uploadTime = 'Just now';
+                      } else if (diff.inHours < 1) {
+                        uploadTime = '${diff.inMinutes}m ago';
+                      } else if (diff.inDays < 1) {
+                        uploadTime = '${diff.inHours}h ago';
+                      } else {
+                        uploadTime = '${diff.inDays}d ago';
+                      }
+                    }
+                  }
+
                   final photo = GalleryPhoto(
                     id: p['id'],
                     imageUrl: fullUrl,
                     uploaderName: widget.name,
-                    uploaderAvatar: widget.imageUrl,
-                    uploadTime: '',
+                    uploaderAvatar: avatarResolved,
+                    uploadTime: uploadTime,
                   );
                   return GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PhotoViewerPage(photo: photo, eventId: widget.eventId),
-                      ),
-                    ),
+                    onTap: () async {
+                      final deleted = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PhotoViewerPage(
+                            photo: photo,
+                            isHost: widget.isHost,
+                            eventId: widget.eventId,
+                          ),
+                        ),
+                      );
+                      if (deleted == true) _loadDetail();
+                    },
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(fullUrl, fit: BoxFit.cover),

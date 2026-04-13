@@ -38,8 +38,8 @@ class EventFeatureGrid extends StatelessWidget {
             Expanded(
               child: _FeatureCard(
                 icon: Icons.photo_library_outlined,
-                iconBgColor: const Color(0xFFF0EBFF),
-                iconColor: AppColors.primary,
+                iconBgColor: const Color(0xFFFCE4EC),
+                iconColor: const Color(0xFFE91E63),
                 title: 'Live Gallery',
                 subtitle: 'Real-time photos',
                 onTap: () {

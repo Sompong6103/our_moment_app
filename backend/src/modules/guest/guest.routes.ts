@@ -9,6 +9,7 @@ router.use(authenticate);
 
 router.post('/join', guestController.join);
 router.post('/check-in', guestController.checkIn);
+router.delete('/leave', guestController.leave);
 router.get('/my-status', requireEventAccess, guestController.myStatus);
 router.get('/', requireEventAccess, guestController.list);
 router.get('/:guestId', requireEventAccess, guestController.getDetail);

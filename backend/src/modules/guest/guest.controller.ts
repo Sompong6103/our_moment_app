@@ -67,4 +67,15 @@ export const guestController = {
       res.status(500).json({ error: 'Failed to fetch status' });
     }
   },
+
+  async leave(req: Request, res: Response) {
+    try {
+      const result = await guestService.leaveEvent(req.params.eventId as string, req.userId!);
+      res.json(result);
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Request failed';
+      const status = message.toLowerCase().includes('not found') ? 404 : 400;
+      res.status(status).json({ error: message });
+    }
+  },
 };

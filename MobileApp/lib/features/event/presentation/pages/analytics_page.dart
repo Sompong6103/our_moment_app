@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
 import '../../data/repositories/event_repository.dart';
@@ -341,7 +342,15 @@ class _ContributorTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            CircleAvatar(radius: 18, backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null),
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: ApiConfig.fullImageUrl(avatarUrl) != null
+                  ? NetworkImage(ApiConfig.fullImageUrl(avatarUrl)!)
+                  : null,
+              child: ApiConfig.fullImageUrl(avatarUrl) == null
+                  ? const Icon(Icons.person, size: 18, color: Colors.white)
+                  : null,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),

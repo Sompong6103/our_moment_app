@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:our_moment_app/core/services/api_config.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Background service that maintains a Socket.IO connection
@@ -90,7 +91,11 @@ Future<void> _onStart(ServiceInstance service) async {
   await notifPlugin.initialize(
     settings: const InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(),
+      iOS: DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      ),
     ),
   );
 
@@ -107,7 +112,7 @@ Future<void> _onStart(ServiceInstance service) async {
   }
 
   // Connect Socket.IO
-  const serverUrl = 'http://192.168.1.102:3000';
+  const serverUrl = 'http://${ApiConfig.host}:3000';
   final socket = io.io(
     serverUrl,
     io.OptionBuilder()
@@ -116,7 +121,7 @@ Future<void> _onStart(ServiceInstance service) async {
         .enableAutoConnect()
         .enableReconnection()
         .setReconnectionDelay(5000)
-        .setReconnectionAttempts(double.infinity.toInt())
+        .setReconnectionAttempts(1000000)
         .build(),
   );
 

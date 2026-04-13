@@ -5,6 +5,7 @@ import '../../../../core/services/background_notification_service.dart';
 import '../../../../core/services/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../main.dart' show routeObserver;
 import '../../../event/data/repositories/event_repository.dart';
 import '../../../event/domain/models/event_model.dart';
 import '../../../event/presentation/pages/create_event_page.dart';
@@ -26,7 +27,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with RouteAware {
   int _navIndex = 0;
   List<EventModel> _events = [];
   List<NotificationModel> _notifications = [];
@@ -50,9 +51,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _notifSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Reload data when returning to this page from a pushed page
+    _loadData();
   }
 
   Future<void> _initRealTime() async {
@@ -245,7 +259,10 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: Colors.transparent,
           indicatorColor: Colors.transparent,
           overlayColor: WidgetStateProperty.all(Colors.transparent),
-          onDestinationSelected: (i) => setState(() => _navIndex = i),
+          onDestinationSelected: (i) {
+            if (i == 0 && _navIndex != 0) _loadData();
+            setState(() => _navIndex = i);
+          },
           destinations: [
             NavigationDestination(
               icon: Icon(

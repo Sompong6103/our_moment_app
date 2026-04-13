@@ -33,4 +33,8 @@ class GuestRepository {
   Future<Map<String, dynamic>> getDetail(String eventId, String guestId) async {
     return await _api.get('/events/$eventId/guests/$guestId', auth: true);
   }
+
+  Future<Map<String, dynamic>> leave(String eventId) async {
+    return await _api.delete('/events/$eventId/guests/leave', auth: true);
+  }
 }

@@ -90,16 +90,11 @@ class _NotificationPageState extends State<NotificationPage> {
         const SizedBox(height: 16),
         Expanded(
           child: _notifications.isEmpty
-              ? RefreshIndicator(
-                  onRefresh: _refresh,
-                  child: ListView(
-                    children: const [
-                      EmptyState(
-                        title: 'Notifications will appear here',
-                        subtitle: 'watch this space for offer, update, and more',
-                        imageAsset: 'assets/images/empty_notifications.png',
-                      ),
-                    ],
+              ? const Center(
+                  child: EmptyState(
+                    title: 'Notifications will appear here',
+                    subtitle: 'Watch this space for offers, updates, and more',
+                    imageAsset: 'assets/images/empty_notifications.png',
                   ),
                 )
               : RefreshIndicator(

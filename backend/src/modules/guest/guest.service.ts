@@ -26,8 +26,10 @@ export const guestService = {
         });
 
         if (data?.wish) {
-            await prisma.wish.create({
-                data: {
+            await prisma.wish.upsert({
+                where: { eventId_userId: { eventId, userId } },
+                update: { message: data.wish },
+                create: {
                     eventId,
                     userId,
                     message: data.wish,
@@ -122,5 +124,20 @@ export const guestService = {
             select: { status: true, joinedAt: true, checkedInAt: true },
         });
         return guest;
+    },
+
+    async leaveEvent(eventId: string, userId: string) {
+        const guest = await prisma.eventGuest.findUnique({
+            where: { eventId_userId: { eventId, userId } },
+        });
+        if (!guest) throw new Error('Guest not found');
+
+        await prisma.eventGuest.delete({
+            where: { id: guest.id },
+        });
+
+        emitToEvent(eventId, 'guest:left', { userId });
+
+        return { message: 'Left event successfully' };
     },
 };

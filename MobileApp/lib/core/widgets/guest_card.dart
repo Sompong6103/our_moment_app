@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_config.dart';
 import '../theme/app_colors.dart';
 
 class GuestCard extends StatelessWidget {
@@ -32,7 +33,15 @@ class GuestCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            CircleAvatar(radius: 22, backgroundImage: NetworkImage(avatarUrl)),
+            CircleAvatar(
+              radius: 22,
+              backgroundImage: ApiConfig.fullImageUrl(avatarUrl) != null
+                  ? NetworkImage(ApiConfig.fullImageUrl(avatarUrl)!)
+                  : null,
+              child: ApiConfig.fullImageUrl(avatarUrl) == null
+                  ? const Icon(Icons.person, size: 22, color: Colors.white)
+                  : null,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

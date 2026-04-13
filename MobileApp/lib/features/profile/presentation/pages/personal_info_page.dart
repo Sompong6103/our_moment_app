@@ -127,6 +127,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
         ),
         IOSUiSettings(
           title: 'Crop Photo',
+          doneButtonTitle: 'Done',
+          cancelButtonTitle: 'Cancel',
           aspectRatioLockEnabled: true,
           resetAspectRatioEnabled: false,
         ),

@@ -9,6 +9,8 @@ import 'features/auth/presentation/pages/create_account_page.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
 
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await BackgroundNotificationService().initialize();
@@ -24,6 +26,7 @@ class OurMomentApp extends StatelessWidget {
       title: 'Our Moment',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      navigatorObservers: [routeObserver],
       home: const _AuthGate(),
       routes: {
         AppRoutes.login: (_) => const LoginPage(),

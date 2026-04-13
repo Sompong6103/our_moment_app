@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/api_client.dart';
+import '../../../../core/services/api_config.dart';
 import '../../../../core/services/token_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_detail_scaffold.dart';
@@ -151,7 +152,10 @@ class _WishWallScreenState extends State<WishWallScreen> {
         final item = _wishes[index];
         final user = item['user'] as Map<String, dynamic>? ?? {};
         final name = user['fullName'] ?? 'Guest';
-        final avatar = user['avatarUrl'] ?? '';
+        final rawAvatar = user['avatarUrl'] ?? '';
+        final avatar = rawAvatar.isNotEmpty && !rawAvatar.startsWith('http')
+            ? '${ApiConfig.uploadsUrl}/$rawAvatar'
+            : rawAvatar;
         final message = item['message'] ?? '';
         final time = _timeAgo(item['createdAt']);
 
@@ -176,7 +180,11 @@ class _WishWallScreenState extends State<WishWallScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  CircleAvatar(radius: 14, backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null),
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                    child: avatar.isEmpty ? const Icon(Icons.person, size: 14, color: Colors.white) : null,
+                  ),
                   const SizedBox(width: 10),
                   Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const Spacer(),

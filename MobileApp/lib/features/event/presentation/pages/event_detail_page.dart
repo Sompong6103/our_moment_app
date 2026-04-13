@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/services/api_client.dart';
 import '../../../../core/services/api_config.dart';
@@ -104,16 +105,48 @@ class _EventDetailPageState extends State<EventDetailPage> {
     );
 
     if (joined == true && mounted) {
-      setState(() {
-        _showJoinButton = false;
-        _joined = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Joined ${widget.event.title} successfully!'),
-          backgroundColor: AppColors.primary,
+      // Pop all pages back to Home, then push EventDetailPage
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => EventDetailPage(event: widget.event),
         ),
       );
+    }
+  }
+
+  Future<void> _leaveEvent() async {
+    final confirm = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Leave Event'),
+        content: Text('Are you sure you want to leave "${widget.event.title}"?'),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            child: const Text('Leave'),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await _guestRepo.leave(widget.event.id);
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -150,7 +183,24 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 ),
               ),
             ]
-          : null,
+          : _joined
+              ? [
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: AppColors.textPrimary, size: 22),
+                    padding: EdgeInsets.zero,
+                    onSelected: (value) {
+                      if (value == 'leave') _leaveEvent();
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'leave',
+                        height: 40,
+                        child: Text('Leave Event', style: TextStyle(color: Colors.red, fontSize: 14)),
+                      ),
+                    ],
+                  ),
+                ]
+              : null,
       child: Column(
         children: [
           Expanded(
