@@ -46,7 +46,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('เข้าร่วมอีเวนต์สำเร็จ: ${result['eventName']}'),
+            content: Text('พบอีเวนต์: ${result['eventName']}'),
             backgroundColor: Colors.green,
           ),
         );

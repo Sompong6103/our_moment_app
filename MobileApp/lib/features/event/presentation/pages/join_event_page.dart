@@ -3,6 +3,7 @@ import '../../../../core/services/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_primary_button.dart';
 import '../../data/repositories/event_repository.dart';
+import '../../data/repositories/guest_repository.dart';
 import 'event_detail_page.dart';
 import 'scan_qr_page.dart';
 
@@ -16,6 +17,7 @@ class JoinEventPage extends StatefulWidget {
 class _JoinEventPageState extends State<JoinEventPage> {
   final _codeController = TextEditingController();
   final _eventRepo = EventRepository();
+  final _guestRepo = GuestRepository();
   String? _errorText;
   bool _loading = false;
 
@@ -35,15 +37,23 @@ class _JoinEventPageState extends State<JoinEventPage> {
     setState(() { _errorText = null; _loading = true; });
     try {
       final event = await _eventRepo.getByCode(code);
-      if (mounted) {
-        setState(() => _loading = false);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EventDetailPage(event: event, showJoinButton: true),
-          ),
-        );
-      }
+      if (!mounted) return;
+      // Check if already joined
+      try {
+        final status = await _guestRepo.getMyStatus(event.id);
+        if (status['status'] != null) {
+          setState(() => _loading = false);
+          _showAlreadyJoinedDialog();
+          return;
+        }
+      } catch (_) {}
+      setState(() => _loading = false);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EventDetailPage(event: event, showJoinButton: true),
+        ),
+      );
     } on ApiException catch (e) {
       if (mounted) {
         setState(() { _errorText = e.message; _loading = false; });
@@ -68,14 +78,21 @@ class _JoinEventPageState extends State<JoinEventPage> {
 
     try {
       final event = await _eventRepo.getByCode(code);
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EventDetailPage(event: event, showJoinButton: true),
-          ),
-        );
-      }
+      if (!mounted) return;
+      // Check if already joined
+      try {
+        final status = await _guestRepo.getMyStatus(event.id);
+        if (status['status'] != null) {
+          _showAlreadyJoinedDialog();
+          return;
+        }
+      } catch (_) {}
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EventDetailPage(event: event, showJoinButton: true),
+        ),
+      );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -83,6 +100,29 @@ class _JoinEventPageState extends State<JoinEventPage> {
         );
       }
     }
+  }
+
+  void _showAlreadyJoinedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: const Icon(Icons.check_circle, color: AppColors.primary, size: 48),
+        title: const Text('Already Joined'),
+        content: const Text(
+          'You have already joined this event.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

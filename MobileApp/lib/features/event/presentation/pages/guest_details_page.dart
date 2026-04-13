@@ -18,7 +18,7 @@ class _GuestDetailsPageState extends State<GuestDetailsPage> {
   final _allergyController = TextEditingController();
   final _wishController = TextEditingController();
   final _guestRepo = GuestRepository();
-  int _followers = 1;
+  int _followers = 0;
   bool _saving = false;
 
   @override
@@ -149,7 +149,7 @@ class _GuestDetailsPageState extends State<GuestDetailsPage> {
                           _CounterButton(
                             icon: Icons.remove,
                             onTap: () {
-                              if (_followers > 1) setState(() => _followers--);
+                              if (_followers >= 1) setState(() => _followers--);
                             },
                           ),
                           Container(
