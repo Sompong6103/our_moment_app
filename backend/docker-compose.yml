@@ -1,0 +1,15 @@
+services:
+  backend:
+    image: harbor.sm-developer.dev/muict/our-moment-backend:latest
+    container_name: our-moment-backend
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - backend_uploads:/app/uploads
+
+volumes:
+  backend_uploads:
