@@ -337,3 +337,12 @@ GOOGLE_SERVER_CLIENT_ID=your-google-server-client-id
 | POST | `/api/events/:id/wishes` | Create wish |
 | GET | `/api/events/:id/analytics` | Event analytics |
 | GET | `/api/notifications` | List notifications |
+
+## Preview App
+<img height="300" alt="IMG_2756" src="https://github.com/user-attachments/assets/a9d10796-b2a7-443a-8a56-1c947e134ee0" />
+<img height="300" alt="IMG_2757" src="https://github.com/user-attachments/assets/b3bd1e23-44e9-4341-920e-8a4369db656d" />
+<img height="300" alt="IMG_2772" src="https://github.com/user-attachments/assets/137b330f-ccdb-4fc7-8651-ff9e48c266ed" />
+<img height="300" alt="IMG_2789" src="https://github.com/user-attachments/assets/ffb98c47-749d-45e8-b265-fe666e237471" />
+<img height="300" alt="IMG_2795" src="https://github.com/user-attachments/assets/3f063dfd-264e-42d6-ba80-ced7c19bd2e0" />
+<img height="300" alt="IMG_2799" src="https://github.com/user-attachments/assets/e4a1ad36-fdd1-4efb-a722-928a2c14d53b" />
+<img height="300" alt="IMG_2761" src="https://github.com/user-attachments/assets/7e4dff24-55a3-44c1-8ee7-f11ac2e1ac6d" />
