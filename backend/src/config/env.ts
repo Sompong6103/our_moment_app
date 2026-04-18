@@ -1,0 +1,33 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+export const env = {
+  nodeEnv: process.env.NODE_ENV || 'development',
+  port: parseInt(process.env.PORT || '3000', 10),
+
+  // Database
+  databaseUrl: process.env.DATABASE_URL!,
+
+  // JWT
+  jwtAccessSecret: process.env.JWT_ACCESS_SECRET!,
+  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET!,
+  jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+
+  // Google OAuth
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+
+  // Upload
+  uploadDir: process.env.UPLOAD_DIR || './uploads',
+  maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760', 10),
+
+  // App
+  appUrl: process.env.APP_URL || 'http://localhost:3000',
+  frontendUrl: process.env.FRONTEND_URL || 'ourmoment://',
+
+  // Face++ API
+  faceppApiKey: process.env.FACEPP_API_KEY || '',
+  faceppApiSecret: process.env.FACEPP_API_SECRET || '',
+  faceppBaseUrl: process.env.FACEPP_BASE_URL || 'https://api-us.faceplusplus.com',
+};
